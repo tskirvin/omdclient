@@ -1,0 +1,26 @@
+#!/bin/bash
+# Looks at a git commit for updated .yaml files; each updated file will have
+# its monitoring information updated with omd-puppet-enc.  Meant to be used as
+# a post-receive hook for a puppet ENC git repository.
+
+tmp=$(mktemp /tmp/git.XXXXXX)
+exit_status=0
+
+while read old_mode new_mode old_sha1 new_sha1 status name
+do
+    test -z "$new_sha1" && continue
+    if [[ $name =~ [.]yaml$ ]]; then
+        FILENAME=$tmp/`basename $name`
+        git cat-file blob $new_sha1 > $FILENAME
+        if [ "$new_sha1" = "0000000000000000000000000000000000000000" ]; then
+            /usr/bin/omd-puppet-enc delete $FILENAME
+            if [[ $? -ne 0 ]]; then exit_status=2; fi
+        else
+            /usr/bin/omd-puppet-enc update $FILENAME
+            if [[ $? -ne 0 ]]; then exit_status=2; fi
+        fi
+    fi
+done
+
+rm -f $log $tmp $tree
+exit $exit_status

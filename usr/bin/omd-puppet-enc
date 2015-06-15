@@ -1,0 +1,91 @@
+#!/bin/bash
+# Read a puppet ENC file - a yaml 
+
+ACTION=$1
+FILE=$2
+if [[ ! -f $FILE ]]; then
+    echo "Usage: $0 [update|delete] FILE.yaml"
+    exit -1
+fi
+
+ENC_HOST=`basename $FILE | sed -e 's/\..*\.yaml//'`
+
+if   [[ $ACTION == 'update' ]]; then
+    CMK_ROLE=`cat $FILE     | shyaml get-value parameters.checkmk_role`
+    CMK_INSTANCE=`cat $FILE | shyaml get-value parameters.checkmk_instance`
+    CMK_EXTRA=`cat $FILE    | shyaml get-value parameters.checkmk_extra`
+
+    CMD="omd-host-crud update $ENC_HOST --role $CMK_ROLE --instance $CMK_INSTANCE --extra $CMK_EXTRA"
+elif [[ $ACTION == 'delete' ]]; then
+    CMD="omd-host-crud delete $ENC_HOST"
+else
+    echo "Usage [update|delete] FILE.yaml"
+    exit -1
+fi
+
+echo $CMD
+exec $CMD
+
+###############################################################################
+### Documentation #############################################################
+###############################################################################
+
+# Documentation.  Use a hack to hide this from the shell.  Because of the
+# above exit line, this should never be executed.
+DOCS=<<__END_OF_DOCS__
+
+=head1 NAME
+
+omd-puppet-enc - converts puppet ENC data to omd-host-crud commands
+
+=head1 SYNOPSIS
+
+B<omd-puppet-enc> update cmsdev43.fnal.gov.yaml
+
+B<omd-puppet-enc> delete cmsdev43.fnal.gov.yaml
+
+=head1 DESCRIPTION
+
+This script parses standard ENC yaml, as defined at:
+
+    https://docs.puppetlabs.com/guides/external_nodes.html
+
+It then runs appropriate omd-host-crud commands to either update or delete
+the upstream monitoring configuration based on the contents of the ENC.  This
+can then be hooked into (say) a post-receive hook to automatically update
+monitoring data when hosts are added/removed/updated in the main node
+repository.
+
+=head1 PARAMETERS
+
+=over 4
+
+=item COMMAND
+
+Either I<update> or I<delete>.  Passed to B<omd-host-crud>.
+
+=item FILENAME
+
+File to load.  The name of the file should correspond to the fqdn of the host,
+plus '.yaml', in an arbitrary path.
+
+=back
+
+=head1 SEE ALSO
+
+B<omd-host-crud>
+
+=head1 AUTHOR
+
+Tim Skirvin <tskirvin@killfile.org>
+
+=head1 LICENSE
+
+Copyright 2015, Fermi National Accelerator Laboratory
+
+This program is free software; you may redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
+
+__END_OF_DOCS__
