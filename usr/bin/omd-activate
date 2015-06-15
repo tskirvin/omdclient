@@ -12,8 +12,7 @@ import omdclient, optparse, sys
 #########################################################################
 ## Managed via central libraries and /etc/omd_client
 
-# config_file = '/etc/omdclient/config.yaml'
-config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
+config_file = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "Activate changes in check_mk/WATO interface"

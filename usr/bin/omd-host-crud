@@ -14,8 +14,7 @@ import omdclient, optparse, sys
 #########################################################################
 
 ## Central configuration file.
-# config_file = '/etc/omdclient/config.yaml'
-config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
+config_file = '/etc/omdclient/config.yaml'
 
 ## Default values for role/instance/extra for create/update.
 role     = 'UNSET'

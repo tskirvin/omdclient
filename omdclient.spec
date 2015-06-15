@@ -9,7 +9,7 @@ License:        Artistic 2.0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
-Requires:       rsync shyaml moreutils python-beautifulsoup4
+Requires:       rsync shyaml moreutils python-beautifulsoup4 python-requests
 BuildRequires:  rsync
 
 Source:         omdclient-%{version}-%{release}.tar.gz
