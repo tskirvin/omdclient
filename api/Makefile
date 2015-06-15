@@ -28,6 +28,16 @@ activate:
 	    '$(URL_BASE)?action=activate_changes&$(URL_AUTH)' \
 	    -d '' | jq . ;
 
+
+create:
+	if [[ $(HOST) == 'NONE' ]]; then \
+	    echo "Usage: make create HOST=..." ; \
+	else \
+	    curl -s -H 'Accept: application/json' \
+	        '$(URL_BASE)?action=add_host&$(URL_AUTH)' \
+		    -d 'request={"hostname": "$(HOST)", "folder": "check_mk"}' | jq . ; \
+	fi
+
 ## delete-host
 
 delete-host:

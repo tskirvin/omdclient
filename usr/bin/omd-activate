@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-"""
-Query information about a given host from OMD, using the WATO API.
-"""
+# Activate changes made via the omdclient scripts.
 
 #########################################################################
 ### Declarations ########################################################
@@ -18,26 +16,8 @@ import omdclient, optparse, sys
 config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "Query information about a given host from OMD, using the WATO API"
-usage_text = "usage: %prog [options] HOSTNAME"
-
-#########################################################################
-### Subroutines #########################################################
-#########################################################################
-
-def printReport(result, opt):
-    """
-    Given the result from query(), print a useful report regarding the
-    host.
-    """
-    att = result['attributes']
-    print result['hostname']
-    if att['alias']:
-        print "  %-20s %s" % ('alias', att['alias'])
-    print "  %-20s %s" % ('cmk_role',     att['tag_role'])
-    print "  %-20s %s" % ('cmk_instance', att['tag_instance'])
-    print "  %-20s %s" % ('folder',       result['path'])
-
+text = "Activate changes in check_mk/WATO interface"
+usage_text = "usage: %prog [options]"
 
 #########################################################################
 ### main () #############################################################
@@ -51,30 +31,23 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
-    p.add_option('--explicit', dest='explicit', action='store_true',
-        help='only load explicitly-set attributes?  (default: %default)')
     opt, args = p.parse_args()
+
     arghash = omdclient.generateUrlArgs(opt)
 
-    if opt.explicit:
-        arghash['effective_attributes'] = "0"
-    else:
-        arghash['effective_attributes'] = "1"
-
-    if len(args) != 1:
-        p.print_help()
-        sys.exit(1)
-
-    host = args[0]
-    result = omdclient.queryHost (host, arghash)
-
-    if result == False:
-        print "%s - no match" % host
-        sys.exit(1)
-    else:
-        printReport(result, opt)
-        sys.exit(0)
-
+    try:
+        value, result = omdclient.activateChanges(arghash)
+        if value == False:
+            if result == None: print "%s - unknown error" % host
+            else:              print result
+            sys.exit(1)
+        else:
+            print result
+            sys.exit(0)
+    except Exception, e:
+        print "failed to activate changes: %s" % (e)
+        sys.exit(-1)
+    
 if __name__ == "__main__":
     main()
 
@@ -86,23 +59,17 @@ if __name__ == "__main__":
 
 =head1 NAME
 
-omd-hostinfo - print omd/check_mk configuration info about a given host
+omd-activate - activate changes on the OMD site
 
 =head1 SYNOPSIS
 
-B<omd-hostinfo> cmsadmin1
+B<omd-activate>
 
 =head1 USAGE
 
-omd-hostinfo queries an OMD monitoring site for information about a given
-host, and prints a useful summary to STDOUT.  This output looks something
-like:
-
-    cmssrv288
-      alias                cms-console-bak
-      cmk_role             console
-      cmk_instance         backup
-      folder               cms-internal
+omd-activate simply activates the changes that were made in other scripts.
+It generally takes a long time to run, and (sometimes) get back a 503 http
+error because of how long it takes.
 
 =head1 ARGUMENTS
 
@@ -116,10 +83,6 @@ If set, print debugging information.
 
 Password for the API User.  Default: comes from the configuration file.
 
-=item B<--explicit>
-
-[...]
-
 =item B<--server> I<server>
 
 Host name of the server.  Default: comes from the configuration file.
@@ -132,10 +95,6 @@ Site name within the server.  Default: comes from the configuration file.
 
 API User name.  The user must exist on the server, and be an 'automation
 user'.  Default: comes from the configuration file.
-
-=item I<hostname>
-
-Hostname for which to query.  No default, must be set.
 
 =back
 

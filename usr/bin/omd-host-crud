@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Query information about a given host from OMD, using the WATO API.
+CRUD interface to the OMD.
 """
 
 #########################################################################
@@ -14,12 +14,16 @@ import omdclient, optparse, sys
 #########################################################################
 ## Managed via central libraries and /etc/omd_client
 
+role     = 'UNSET'
+instance = 'UNSET'
+extra    = 'UNSET'
+
 # config_file = '/etc/omdclient/config.yaml'
 config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "Query information about a given host from OMD, using the WATO API"
-usage_text = "usage: %prog [options] HOSTNAME"
+text = "Manage a given host in OMD, using the WATO API"
+usage_text = "usage: %prog [create|read|update|delete] HOSTNAME [options]"
 
 #########################################################################
 ### Subroutines #########################################################
@@ -38,7 +42,6 @@ def printReport(result, opt):
     print "  %-20s %s" % ('cmk_instance', att['tag_instance'])
     print "  %-20s %s" % ('folder',       result['path'])
 
-
 #########################################################################
 ### main () #############################################################
 #########################################################################
@@ -51,29 +54,91 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
-    p.add_option('--explicit', dest='explicit', action='store_true',
-        help='only load explicitly-set attributes?  (default: %default)')
+    p.add_option('--role', dest='role', default=role,
+        help='role name (default: %default)')
+    p.add_option('--instance', dest='instance', default=instance,
+        help='instance name (default: %default)')
+    p.add_option('--extra', dest='extra', default=extra,
+        help='extra flags (space separated, default: %default)')
     opt, args = p.parse_args()
+
     arghash = omdclient.generateUrlArgs(opt)
+    arghash['instance'] = opt.instance
+    arghash['role'] = opt.role
+    arghash['extra'] = opt.extra
 
-    if opt.explicit:
-        arghash['effective_attributes'] = "0"
-    else:
-        arghash['effective_attributes'] = "1"
-
-    if len(args) != 1:
+    if len(args) != 2:
         p.print_help()
         sys.exit(1)
 
-    host = args[0]
-    result = omdclient.queryHost (host, arghash)
+    request = args[0]
+    host    = args[1]
 
-    if result == False:
-        print "%s - no match" % host
-        sys.exit(1)
-    else:
-        printReport(result, opt)
-        sys.exit(0)
+    try:
+        
+        if   request == 'create':
+            value, result = omdclient.createHost(host, arghash)
+            if value == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print "error on create: %s" % result
+                sys.exit(1)
+
+            print "%s - host created, will now inventory..." % host
+
+            value1, result1 = omdclient.discoverServicesHost(host, arghash)
+            if value1 == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print "error on inventory: %s" % result
+                sys.exit(1)
+            else:
+                print "%s - %s" % (host, result1)
+                sys.exit(0)
+
+        elif request == 'read':
+            value, result = omdclient.readHost(host, arghash)
+            if value == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print result
+                sys.exit(1)
+            else:
+                printReport(result, opt)
+                sys.exit(0)
+
+        elif request == 'update':
+            value, result = omdclient.updateHost(host, arghash)
+            if value == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print "error on update: %s" % result
+                sys.exit(1)
+
+            print "%s - host updated, will now inventory..." % host
+
+            value1, result1 = omdclient.discoverServicesHost(host, arghash)
+            if value1 == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print "error on inventory: %s" % result
+                sys.exit(1)
+            else:
+                print "%s - %s" % (host, result1)
+                sys.exit(0)
+
+        elif request == 'delete':
+            value, result = omdclient.deleteHost(host, arghash)
+            if value == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print result
+                sys.exit(1)
+            else:
+                print "%s - host deleted" % host
+                sys.exit(0)
+
+        else:
+            p.print_help('invalid request name: %s' % request)
+            sys.exit(1)
+
+    except Exception, e:
+        print "failed to %s: %s" % (request, e)
+        sys.exit(-1)
 
 if __name__ == "__main__":
     main()
@@ -86,11 +151,17 @@ if __name__ == "__main__":
 
 =head1 NAME
 
-omd-hostinfo - print omd/check_mk configuration info about a given host
+omd-host-crud - create/read/update/delete omd host entries
 
 =head1 SYNOPSIS
 
-B<omd-hostinfo> cmsadmin1
+B<omd-host-crud> create cms-foo --role unconfigured
+
+B<omd-host-crud> read cms-foo 
+
+B<omd-host-crud> update cms-foo --instance dev
+
+B<omd-host-crud> delete cms-foo
 
 =head1 USAGE
 
@@ -115,10 +186,6 @@ If set, print debugging information.
 =item B<--apikey> I<key>
 
 Password for the API User.  Default: comes from the configuration file.
-
-=item B<--explicit>
-
-[...]
 
 =item B<--server> I<server>
 

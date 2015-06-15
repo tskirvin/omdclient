@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Query information about a given host from OMD, using the WATO API.
+Update a host entry in OMD.
 """
 
 #########################################################################
@@ -14,16 +14,36 @@ import omdclient, optparse, sys
 #########################################################################
 ## Managed via central libraries and /etc/omd_client
 
+instance = 'undef'
+
 # config_file = '/etc/omdclient/config.yaml'
 config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "Query information about a given host from OMD, using the WATO API"
+text = "Update a given host from OMD, using the WATO API"
 usage_text = "usage: %prog [options] HOSTNAME"
 
 #########################################################################
 ### Subroutines #########################################################
 #########################################################################
+
+def generateRequestPayload (result, role, arghash):
+    """
+    """
+    att = result['attributes']
+
+    change = {}
+    if att['tag_role'] != role:
+        change['tag_role'] = role
+
+    if att['tag_instance'] != arghash['instance']:
+        change['tag_instance'] = arghash['instance']
+
+    payload = {}
+    payload['hostname'] = result['hostname']
+    payload['attributes'] = change
+    return payload
+
 
 def printReport(result, opt):
     """
@@ -51,28 +71,27 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
-    p.add_option('--explicit', dest='explicit', action='store_true',
-        help='only load explicitly-set attributes?  (default: %default)')
+    p.add_option('--instance', dest='instance', default=instance,
+        help='instance name (default: %default)')
     opt, args = p.parse_args()
     arghash = omdclient.generateUrlArgs(opt)
 
-    if opt.explicit:
-        arghash['effective_attributes'] = "0"
-    else:
-        arghash['effective_attributes'] = "1"
+    arghash['instance'] = opt.instance
 
-    if len(args) != 1:
+    if len(args) != 2:
         p.print_help()
         sys.exit(1)
 
-    host = args[0]
-    result = omdclient.queryHost (host, arghash)
+    host     = args[0]
+    role     = args[1]
+    result = omdclient.queryHost(host, arghash)
 
     if result == False:
         print "%s - no match" % host
         sys.exit(1)
     else:
-        printReport(result, opt)
+        payload = generateRequestPayload (result, role, arghash)
+        omdclient.updateHost(host, payload, arghash)
         sys.exit(0)
 
 if __name__ == "__main__":
@@ -115,10 +134,6 @@ If set, print debugging information.
 =item B<--apikey> I<key>
 
 Password for the API User.  Default: comes from the configuration file.
-
-=item B<--explicit>
-
-[...]
 
 =item B<--server> I<server>
 

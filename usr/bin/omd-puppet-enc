@@ -1,5 +1,6 @@
 #!/bin/bash
-# Read a puppet ENC file - a yaml 
+# Converts puppet ENC data to omd-host-crud commands, using the checkmk_role,
+# checkmk_instance, and checkmk_extra fields under 'parameters'.
 
 ACTION=$1
 FILE=$2
@@ -13,9 +14,16 @@ ENC_HOST=`basename $FILE | sed -e 's/\..*\.yaml//'`
 if   [[ $ACTION == 'update' ]]; then
     CMK_ROLE=`cat $FILE     | shyaml get-value parameters.checkmk_role`
     CMK_INSTANCE=`cat $FILE | shyaml get-value parameters.checkmk_instance`
-    CMK_EXTRA=`cat $FILE    | shyaml get-value parameters.checkmk_extra`
+    CMK_EXTRA=`cat $FILE    | shyaml get-values parameters.checkmk_extra`
 
-    CMD="omd-host-crud update $ENC_HOST --role $CMK_ROLE --instance $CMK_INSTANCE --extra $CMK_EXTRA"
+    if [[ $CMK_EXTRA =~ 'unmonitored' ]]; then
+        CMD="omd-host-crud delete $ENC_HOST"
+    else
+        CMD="omd-host-crud update $ENC_HOST \
+            --role ${CMK_ROLE:-UNSET} \
+            --instance ${CMK_INSTANCE:-UNSET}
+            --extra '${CMK_EXTRA:-UNSET}'"
+    fi
 elif [[ $ACTION == 'delete' ]]; then
     CMD="omd-host-crud delete $ENC_HOST"
 else
@@ -70,6 +78,45 @@ File to load.  The name of the file should correspond to the fqdn of the host,
 plus '.yaml', in an arbitrary path.
 
 =back
+
+=head1 FIELDS
+
+We are parsing the following entries under the =parameters= hash in the ENC
+yaml:
+
+=over 4
+
+=item checkmk_role
+
+Primary sorting tag.  More-or-less corresponds to the puppet role.  
+
+Examples: bastion, htcondor_gpgrid_collector.
+
+=item checkmk_instance
+
+Secondary sorting tag.
+
+Examples: test, dev, backup, etc.
+
+=item checkmk_extra
+
+Array of extra fields.  If we see I<unmonitored> for one of them, then we will
+try to delete the host from monitoring.
+
+=back
+
+=head1 SAMPLE DATA
+
+  cmsdev43.fnal.gov.yaml:
+    classes:
+      role::dev:
+
+    parameters:
+      checkmk_role: devhost
+      checkmk_instance: dev
+      checkmk_extra: 
+        - unmonitored
+        - foo
 
 =head1 SEE ALSO
 
