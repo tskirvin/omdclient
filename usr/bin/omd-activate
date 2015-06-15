@@ -32,11 +32,10 @@ def main():
 
     p = omdclient.generateParser(text, usage_text, config)
     opt, args = p.parse_args()
-
-    arghash = omdclient.generateUrlArgs(opt)
+    argdict = omdclient.parserArgDict(opt)
 
     try:
-        value, result = omdclient.activateChanges(arghash)
+        value, result = omdclient.activateChanges(argdict)
         if value == False:
             if result == None: print "%s - unknown error" % host
             else:              print result

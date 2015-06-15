@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# original code from: http://hunnur.com/blog/2010/10/dynamic-git-branch-puppet-environments/
+# however, it has been heavily modified for our environment
+
+# Read input from stdin
+read oldrev newrev refname
+
+# Set the kerberos credentials
+KRB5CCNAME=FILE:/tmp/krb5cc_puppet && /usr/krb5/bin/kinit -k puppet/cms/cms-puppet.fnal.gov@FNAL.GOV -t /etc/puppet/keytab
+
+# try to get the configuration, else set some defaults
+if [ -e /etc/puppet/enc-githooks.conf ]; then
+    . /etc/puppet/enc-githooks.conf
+else
+    REPO="puppet@cms-git:/var/lib/puppet/enc.git"
+    BRANCH_DIR="/srv/puppet/enc"
+    PUPPET_SERVERS="puppet@cmssrv166.fnal.gov"
+fi
+BRANCH=`echo $refname | sed -n 's/^refs\/heads\///p'`
+
+# Define a log function that will echo to stdout as well as log to the system
+function logit
+{
+    echo $1
+    logger $1
+}
+
+function rm_branch {
+    ssh $puppet_server /bin/sh <<-EOF
+cd $BRANCH_DIR && rm -rf $BRANCH
+EOF
+}
+
+function push_branch {
+    remote_server=$1
+    ssh ${remote_server} /bin/sh <<-EOF
+KRB5CCNAME=FILE:/tmp/krb5cc_puppet && /usr/krb5/bin/kinit -k puppet/cms/cms-puppet.fnal.gov@FNAL.GOV -t /etc/puppet/keytab
+{ cd $BRANCH_DIR/$BRANCH && git pull origin $BRANCH ; } \
+|| { mkdir -p $BRANCH_DIR \
+     && cd $BRANCH_DIR \
+     && git clone $REPO $BRANCH \
+     && cd $BRANCH \
+     && git checkout -b $BRANCH origin/$BRANCH ; }
+EOF
+    
+}
+
+# report what we received from stdin
+logit "Recieved from stdin:"
+logit "    oldrev:  $oldrev"
+logit "    newrev:  $newrev"
+logit "    refname: $refname"
+
+# Send notification email
+echo $oldrev $newrev $refname | /usr/share/git-core/contrib/hooks/post-receive-email
+
+# report the configuration we are running with
+logit "Derived Configuration:"
+logit "    REPO: $REPO"
+logit "    BRANCH: $BRANCH"
+logit "    BRANCH_DIR: $BRANCH_DIR"
+logit "    PUPPET_SERVERS: $PUPPET_SERVERS"
+
+if [ "$newrev" -eq 0 ] 2> /dev/null ; then
+    for puppet_server in $PUPPET_SERVERS
+    do
+        # branch is being deleted
+        logit "Deleting remote branch $BRANCH_DIR/$BRANCH on $puppet_server"
+        rm_branch
+    done
+
+else
+    for puppet_server in $PUPPET_SERVERS
+    do
+        # branch is being updated
+        logit "Updating remote branch $BRANCH_DIR/$BRANCH on $puppet_server"
+        push_branch ${puppet_server}
+    done
+fi
+

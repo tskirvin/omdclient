@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-CRUD interface to the OMD.
+Created/Read/Update/Delete interface to the OMD WATO API.
 """
 
 #########################################################################
@@ -12,14 +12,16 @@ import omdclient, optparse, sys
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
-## Managed via central libraries and /etc/omd_client
 
+## Central configuration file.
+# config_file = '/etc/omdclient/config.yaml'
+config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
+
+## Default values for role/instance/extra for create/update.
 role     = 'UNSET'
 instance = 'UNSET'
 extra    = 'UNSET'
 
-# config_file = '/etc/omdclient/config.yaml'
-config_file = '/home/tskirvin/work/rpm/omdclient/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "Manage a given host in OMD, using the WATO API"
@@ -54,18 +56,20 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
-    p.add_option('--role', dest='role', default=role,
+    group = optparse.OptionGroup(p, 'create/update options')
+    group.add_option('--role', dest='role', default=role,
         help='role name (default: %default)')
-    p.add_option('--instance', dest='instance', default=instance,
+    group.add_option('--instance', dest='instance', default=instance,
         help='instance name (default: %default)')
-    p.add_option('--extra', dest='extra', default=extra,
+    group.add_option('--extra', dest='extra', default=extra,
         help='extra flags (space separated, default: %default)')
+    p.add_option_group(group)
     opt, args = p.parse_args()
 
-    arghash = omdclient.generateUrlArgs(opt)
-    arghash['instance'] = opt.instance
-    arghash['role'] = opt.role
-    arghash['extra'] = opt.extra
+    argdict = omdclient.parserArgDict(opt)
+    argdict['instance'] = opt.instance
+    argdict['role']     = opt.role
+    argdict['extra']    = opt.extra
 
     if len(args) != 2:
         p.print_help()
@@ -77,7 +81,7 @@ def main():
     try:
         
         if   request == 'create':
-            value, result = omdclient.createHost(host, arghash)
+            value, result = omdclient.createHost(host, argdict)
             if value == False:
                 if result == None: print "%s - unknown error" % host
                 else:              print "error on create: %s" % result
@@ -85,7 +89,7 @@ def main():
 
             print "%s - host created, will now inventory..." % host
 
-            value1, result1 = omdclient.discoverServicesHost(host, arghash)
+            value1, result1 = omdclient.discoverServicesHost(host, argdict)
             if value1 == False:
                 if result == None: print "%s - unknown error" % host
                 else:              print "error on inventory: %s" % result
@@ -95,7 +99,7 @@ def main():
                 sys.exit(0)
 
         elif request == 'read':
-            value, result = omdclient.readHost(host, arghash)
+            value, result = omdclient.readHost(host, argdict)
             if value == False:
                 if result == None: print "%s - unknown error" % host
                 else:              print result
@@ -105,7 +109,7 @@ def main():
                 sys.exit(0)
 
         elif request == 'update':
-            value, result = omdclient.updateHost(host, arghash)
+            value, result = omdclient.updateHost(host, argdict)
             if value == False:
                 if result == None: print "%s - unknown error" % host
                 else:              print "error on update: %s" % result
@@ -113,7 +117,7 @@ def main():
 
             print "%s - host updated, will now inventory..." % host
 
-            value1, result1 = omdclient.discoverServicesHost(host, arghash)
+            value1, result1 = omdclient.discoverServicesHost(host, argdict)
             if value1 == False:
                 if result == None: print "%s - unknown error" % host
                 else:              print "error on inventory: %s" % result
@@ -123,7 +127,7 @@ def main():
                 sys.exit(0)
 
         elif request == 'delete':
-            value, result = omdclient.deleteHost(host, arghash)
+            value, result = omdclient.deleteHost(host, argdict)
             if value == False:
                 if result == None: print "%s - unknown error" % host
                 else:              print result
@@ -165,23 +169,42 @@ B<omd-host-crud> delete cms-foo
 
 =head1 USAGE
 
-omd-hostinfo queries an OMD monitoring site for information about a given
-host, and prints a useful summary to STDOUT.  This output looks something
-like:
-
-    cmssrv288
-      alias                cms-console-bak
-      cmk_role             console
-      cmk_instance         backup
-      folder               cms-internal
+omd-host-crud provides a CRUD (Create/Read/Update/Delete) interface
+to the OMD/WATO check_mk web interface.  
 
 =head1 ARGUMENTS
 
-=over 4
+=head2 REQUIRED
+
+=over 4 
+
+=item I<action>
+
+create, read, update, delete.
+
+=item I<hostname>
+
+Hostname for which to query.  No default, must be set.
+
+=back
+
+=head2 DEFAULT
+
+=over 4 
 
 =item B<--debug>
 
 If set, print debugging information.
+
+=item B<--help>
+
+Print this information and exit.
+
+=back
+
+=head2 CONNECTION OPTIONS
+
+=over 4
 
 =item B<--apikey> I<key>
 
@@ -200,9 +223,26 @@ Site name within the server.  Default: comes from the configuration file.
 API User name.  The user must exist on the server, and be an 'automation
 user'.  Default: comes from the configuration file.
 
-=item I<hostname>
+=back
 
-Hostname for which to query.  No default, must be set.
+=head2 CREATE/UPDATE OPTIONS
+
+=over 4
+
+=item role
+
+check_mk role name.  This can either be simple ('bastion') or more complex
+based on group name ('htcondor_cmsgrid_worker').  Must already exist on
+the server side.
+
+=item instance
+
+check_mk instance name.  This can be 'test', 'dev', 'itb', or anything
+else that seems appropriate.  Must already exist on the server side.
+
+=item extra
+
+Not yet in use.  If you set to 'unmonitored', then we'll delete the entry.
 
 =back
 

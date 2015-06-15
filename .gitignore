@@ -1,0 +1,4 @@
+etc/omdclient/*.yaml
+omdclient/*.pyc
+omdclient/*.pyo
+ed/
