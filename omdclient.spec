@@ -3,7 +3,7 @@ Group:          System Environment/Libraries
 Version:        1.0.0
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
-URL:            http://cms-git.fnal.gov/omdclient
+URL:            http://cms-git.fnal.gov/omdclient.git
 
 License:        Artistic 2.0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)

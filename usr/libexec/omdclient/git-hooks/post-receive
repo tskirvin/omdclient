@@ -1,4 +1,4 @@
 #!/bin/bash
 
-pee /usr/libexec/omdclient/git-hooks/post-receive/omd-sync \
-    /usr/libexec/omdclient/git-hooks/post-receive/email
+pee /usr/libexec/omdclient/git-hooks/omd-sync \
+    /usr/libexec/omdclient/git-hooks/email

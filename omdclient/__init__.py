@@ -151,6 +151,65 @@ def generateUrl (action, args):
 
     return '&'.join(url_parts)
 
+def generateNagiosUrl (action, args):
+    """
+    Generate the URL used to interact with the server.  
+       action   What action are we taking?  Valid options:
+
+           report
+           ack_host
+           ack_service
+           downtime_host
+           downtime_service
+           schedule_host
+           schedule_service
+           
+       args     Argument dict.  You must have at least these keys:
+
+           apikey
+           server
+           site
+           user
+           view_name
+
+                ...and you can optionally include:
+
+           [...]
+           host
+           service
+
+    If 'debug' is set, we'll print the URL to stdout (with the password 
+    blanked out).
+    """
+    baseurl = 'https://%s/%s/check_mk/view.py?_username=%s' % \
+        (args['server'], args['site'], args['user'])
+    url_parts = [baseurl]
+
+    if action == 'svcreport':
+        url_parts.append('view_name=svcproblems_expanded')
+        url_parts.append('output_format=JSON')
+        url_parts.append('columns=host_name')
+        if 'ack' in args.keys():
+            url_parts.append('is_service_acknowledged=%s' % args['ack'])
+
+    elif action == 'hostreport':
+        url_parts.append('view_name=hostproblems_expanded')
+        url_parts.append('output_format=JSON')
+        if 'ack' in args.keys():
+            url_parts.append('is_host_acknowledged=%s' % args['ack'])
+
+    else:
+        raise Exception('invalid action: %s' % action)
+
+    if args['debug']:
+        url_parts_clean = url_parts
+        url_parts_clean.append('_secret=...')
+        print "url: %s" % '&'.join(url_parts_clean)
+
+    url_parts.append ('_secret=%s' % args['apikey'])
+
+    return '&'.join(url_parts)
+
 def loadUrl (url, request_string):
     """
     Load the URL and request string pair.  Returns a urllib2 response.
@@ -203,9 +262,52 @@ def processUrlResponse(response, debug):
 
     return False, result
 
+def processNagiosReport(response, debug):
+    """
+    Process the response from loadUrl().  Returns two objects: did we get
+    a 'True' response from the server, and the response itself.
+
+    If 'debug' is set, we'll print a lot of extra debugging information.
+    """
+
+    data=response.read()
+
+    try:
+        jsonresult=json.loads(data)
+        if debug: pprint(jsonresult)
+    except ValueError:
+        soup=BeautifulSoup(data)
+        div1=soup.find('div', attrs={'class':'error'})
+        if div1 != None:
+            print "Error returned"
+            print div1.string
+            return False, None
+        else:
+            print "ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:"
+            print data
+            return False, None
+
+    if len(jsonresult) <= 1: return []
+
+    headers = jsonresult.pop(0)
+    return jsonresult
+
+def processNagiosReportSvcEntry(entry):
+    """
+    """
+
+
 #########################################################################
 ### Server Interactions #################################################
 #########################################################################
+
+def activateChanges(arghash):
+    """
+    Activate changes.  This can be slow.
+    """
+    url = generateUrl('activate_changes', arghash)
+    response = loadUrl(url, '')
+    return processUrlResponse(response, arghash['debug'])
 
 def createHost(host, arghash):
     """
@@ -252,6 +354,29 @@ def readHost(host, arghash):
     request_string='request={"hostname" : "%s"}' % ( host )
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
+
+def nagiosReport(type, argdict):
+    """
+    """
+    args = argdict.copy()
+    if   type == 'svc_ack':
+        action = 'svcreport'
+        args['ack'] = 1
+    elif type == 'svc_unack':
+        action = 'svcreport'
+        args['ack'] = 0
+    elif type == 'host_ack':
+        action = 'hostreport'
+        args['ack'] = 1
+    elif type == 'host_unack':
+        action = 'hostreport'
+        args['ack'] = 0
+    else:
+        raise Exception('invalid report type: %s' % type)
+
+    url = generateNagiosUrl (action, args)
+    response = loadUrl(url, '')
+    return processNagiosReport(response, argdict['debug'])
 
 def updateHost(host, arghash):
     """
@@ -308,10 +433,3 @@ def discoverServicesHost(host, arghash):
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
-def activateChanges(arghash):
-    """
-    Activate changes.  This can be slow.
-    """
-    url = generateUrl('activate_changes', arghash)
-    response = loadUrl(url, '')
-    return processUrlResponse(response, arghash['debug'])
