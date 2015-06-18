@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+# Schedules host/service downtime
+
+#########################################################################
+### Declarations ########################################################
+#########################################################################
+
+import datetime, omdclient, optparse, sys
+
+#########################################################################
+### Configuration #######################################################
+#########################################################################
+## Managed via central libraries and /etc/omd_client
+
+config_file = '/etc/omdclient/config.yaml'
+
+## Text for --help
+text = "schedule host/service downtimes via OMD"
+usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
+
+#########################################################################
+### main () #############################################################
+#########################################################################
+
+def main():
+    try:
+        config = omdclient.loadCfg (config_file)
+    except Exception, e:
+        print "failed to load config: %s" % (e)
+        sys.exit(3)
+
+    p = omdclient.generateParser(text, usage_text, config)
+    opt, args = p.parse_args()
+    params = omdclient.parserArgDict(opt)
+
+    if len(args) < 4:
+        p.print_help()
+        sys.exit(1)
+
+    type = args[0]
+    if type == 'host':
+        params['host'] = args[1]
+        params['service'] = None
+        params['hours'] = args[2]
+        params['comment'] = ' '.join(args[3:])
+        params['type'] = 'host'
+        svc_text = '%s' % (params['host'])
+
+    elif (type == 'service' or type == 'svc') and len(args) >= 5:
+        params['host'] = args[1]
+        params['service'] = args[2]
+        params['hours'] = args[3]
+        params['comment'] = ' '.join(args[4:])
+        params['type'] = 'service'
+        svc_text = '%s/%s' % (params['host'], params['service'])
+    else:
+        p.print_help()
+        sys.exit(1)
+
+    try:
+        report = omdclient.nagiosDowntime(params)
+
+        if len(report) > 0:
+            print "%s - downtime for %d hour(s) (probably)" \
+                % (svc_text, int(params['hours']))
+            sys.exit(0)
+        else:
+            print "%s - no matching entries (probably failed)" \
+                % (svc_text)
+            sys.exit(1)
+
+    except Exception, e:
+        print "failed to run: %s" % (e)
+        sys.exit(-1)
+
+if __name__ == "__main__":
+    main()
+
+#########################################################################
+### POD Documentation ###################################################
+#########################################################################
+
+"""
+
+=head1 NAME
+
+omd-nagios-downtime - schedule downtime for a host or service
+
+=head1 SYNOPSIS
+
+B<omd-nagios-downtime> host cmsadmin1 1 'down for an hour'
+
+B<omd-nagios-downtime> service cmsadmin1 puppet-report 2 'down for 2 hours'
+
+=head1 USAGE
+
+omd-nagios-downtime uses the OMD autmation API to put a host or service
+into downtime.  It works on the standard nagios limitations - you can send
+a request, but there's no way to get back a response.  We try to guess a
+response anyway, but it's not horribly reliable.
+
+=head1 ARGUMENTS
+
+=head2 REQUIRED
+
+=over 4
+
+=item I<host|service>
+
+Are we setting downtime for a host or a service?
+
+=item I<HOSTNAME>
+
+Hostname of the host or service.
+
+=item [I<SERVICE>]
+
+Service name of the service (only necessary for service requests).
+
+=item I<HOURS>
+
+How many hours should the downtime last?
+
+=item I<COMMENT>
+
+Some explanatory text.
+
+=back
+
+=head2 OPTIONS
+
+=over 4
+
+=item B<--debug>
+
+If set, print debugging information.
+
+=item B<--apikey> I<key>
+
+Password for the API User.  Default: comes from the configuration file.
+
+=item B<--server> I<server>
+
+Host name of the server.  Default: comes from the configuration file.
+
+=item B<--site> I<site>
+
+Site name within the server.  Default: comes from the configuration file.
+
+=item B<--user> I<user>
+
+API User name.  The user must exist on the server, and be an 'automation
+user'.  Default: comes from the configuration file.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/omdclient/config.yaml>
+
+=back
+
+=head1 SEE ALSO
+
+https://mathias-kettner.de/checkmk_wato_webapi.html
+
+=head1 AUTHOR
+
+Tim Skirvin <tskirvin@fnal.gov>
+
+=head1 LICENSE + COPYRIGHT
+
+Copyright 2015, Fermi National Accelerator Laboratory
+
+This program is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+"""

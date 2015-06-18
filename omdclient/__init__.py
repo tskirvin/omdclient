@@ -12,7 +12,7 @@ config = {}
 ### Declarations ########################################################
 #########################################################################
 
-import json, optparse, os, requests, sys, urllib2, yaml
+import datetime, json, optparse, os, requests, sys, urllib, urllib2, yaml
 from bs4 import BeautifulSoup
 from pprint import pprint
 
@@ -103,7 +103,6 @@ def generateUrl (action, args):
            foreign_ok                For 'activate_changes'
            create_folders            For 'add_host'
                
-
     If 'debug' is set, we'll print the URL to stdout (with the password 
     blanked out).
     """
@@ -156,13 +155,10 @@ def generateNagiosUrl (action, args):
     Generate the URL used to interact with the server.  
        action   What action are we taking?  Valid options:
 
-           report
-           ack_host
-           ack_service
-           downtime_host
-           downtime_service
-           schedule_host
-           schedule_service
+           ack
+           downtime
+           hostreport
+           svcreport
            
        args     Argument dict.  You must have at least these keys:
 
@@ -174,41 +170,97 @@ def generateNagiosUrl (action, args):
 
                 ...and you can optionally include:
 
-           [...]
-           host
-           service
+            ack     Associated with hostreport and svcreport; if set,
+                    we will only load acknowledged (1) or unacknowledged
+                    (0) alerts.
+            end     Associated with 'downtime': a datetime object 
+                    indicating the end of the work.  If not offered,
+                    we'll use start + 'hours' hours.
+            hours   Associated with 'downtime'; indicates a number of
+                    hours of downtime.  Used if we don't have a set 
+                    'end' time.
+            host    Associated with 'downtime' and 'ack': hostname.
+            service Associated with 'downtime' and 'ack': service name.
+            start   Associated with 'downtime'; a datetime object
+                    indicating the start of the work.  If not offered,
+                    we'll just use 'now()'.
+            type    Associated with 'ack' or 'downtime'; must be one of 
+                    'host' or 'service'.
 
     If 'debug' is set, we'll print the URL to stdout (with the password 
     blanked out).
     """
-    baseurl = 'https://%s/%s/check_mk/view.py?_username=%s' % \
-        (args['server'], args['site'], args['user'])
-    url_parts = [baseurl]
+    baseurl = 'https://%s/%s/check_mk/view.py' % (args['server'], args['site'])
+    url_parts = {}
+    url_parts['_username']     = args['user']
+    url_parts['_secret']       = args['apikey']
+    url_parts['output_format'] = 'json'
 
-    if action == 'svcreport':
-        url_parts.append('view_name=svcproblems_expanded')
-        url_parts.append('output_format=JSON')
-        url_parts.append('columns=host_name')
+    if action == 'hostreport':
+        url_parts['view_name'] = 'hostproblems_expanded'
         if 'ack' in args.keys():
-            url_parts.append('is_service_acknowledged=%s' % args['ack'])
+            url_parts['is_host_acknowledged'] = args['ack']
 
-    elif action == 'hostreport':
-        url_parts.append('view_name=hostproblems_expanded')
-        url_parts.append('output_format=JSON')
+    elif action == 'svcreport':
+        url_parts['view_name'] = 'svcproblems_expanded'
         if 'ack' in args.keys():
-            url_parts.append('is_host_acknowledged=%s' % args['ack'])
+            url_parts['is_service_acknowledged'] = args['ack']
+
+    elif action == 'downtime':
+        url_parts['_transid'] = '-1'
+        url_parts['_do_confirm'] = 'yes'
+        url_parts['_do_actions'] = 'yes'
+
+        if 'start' in args.keys(): start = args['start']
+        else:                      start = datetime.datetime.now()
+        if 'end' in args.keys():   end   = args['end']
+        else:             
+            end = start + datetime.timedelta(hours=int(args['hours']))
+
+        url_parts['_down_custom']    = 'Custom+time_range'
+        url_parts['_down_from_date'] = start.date() 
+        url_parts['_down_from_time'] = start.strftime('%H:%M:%S')
+        url_parts['_down_to_date']   = end.date()
+        url_parts['_down_to_time']   = end.strftime('%H:%M:%S')
+        url_parts['_down_comment']   = args['comment']
+
+        if args['type'] == 'host':
+            url_parts['host']      = args['host']
+            url_parts['view_name'] = 'hoststatus'
+        elif args['type'] == 'svc' or args['type'] == 'service':
+            url_parts['host']      = args['host']
+            url_parts['service']   = args['service']
+            url_parts['view_name'] = 'service'
+        else:
+            raise Exception('invalid ack type: %s' % args['type'])
+        
+    elif action == 'ack':
+        url_parts['_transid'] = '-1'
+        url_parts['_do_confirm'] = 'yes'
+        url_parts['_do_actions'] = 'yes'
+
+        url_parts['_ack_comment'] = args['comment']
+        url_parts['_acknowledge'] = 'Acknowledge'
+        if args['type'] == 'host':
+            url_parts['host']      = args['host']
+            url_parts['view_name'] = 'hoststatus'
+        elif args['type'] == 'svc' or args['type'] == 'service':
+            url_parts['host']      = args['host']
+            url_parts['service']   = args['service']
+            url_parts['view_name'] = 'service'
+        else:
+            raise Exception('invalid ack type: %s' % args['type'])
 
     else:
         raise Exception('invalid action: %s' % action)
 
     if args['debug']:
-        url_parts_clean = url_parts
-        url_parts_clean.append('_secret=...')
-        print "url: %s" % '&'.join(url_parts_clean)
+        url_parts_clean = dict(url_parts)
+        url_parts_clean['_secret'] = '...'
+        print "url: %s?%s" % (baseurl, urllib.urlencode(url_parts_clean))
 
-    url_parts.append ('_secret=%s' % args['apikey'])
-
-    return '&'.join(url_parts)
+    url = "%s?%s" % (baseurl, urllib.urlencode(url_parts))
+    return url
 
 def loadUrl (url, request_string):
     """
@@ -264,8 +316,9 @@ def processUrlResponse(response, debug):
 
 def processNagiosReport(response, debug):
     """
-    Process the response from loadUrl().  Returns two objects: did we get
-    a 'True' response from the server, and the response itself.
+    Process the response from loadUrl().  Returns an array of matching
+    objects, where we've trimmed off the first one (which described the
+    fields of the later objects).
 
     If 'debug' is set, we'll print a lot of extra debugging information.
     """
@@ -292,13 +345,8 @@ def processNagiosReport(response, debug):
     headers = jsonresult.pop(0)
     return jsonresult
 
-def processNagiosReportSvcEntry(entry):
-    """
-    """
-
-
 #########################################################################
-### Server Interactions #################################################
+### WATO API Interactions ###############################################
 #########################################################################
 
 def activateChanges(arghash):
@@ -355,37 +403,13 @@ def readHost(host, arghash):
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
-def nagiosReport(type, argdict):
-    """
-    """
-    args = argdict.copy()
-    if   type == 'svc_ack':
-        action = 'svcreport'
-        args['ack'] = 1
-    elif type == 'svc_unack':
-        action = 'svcreport'
-        args['ack'] = 0
-    elif type == 'host_ack':
-        action = 'hostreport'
-        args['ack'] = 1
-    elif type == 'host_unack':
-        action = 'hostreport'
-        args['ack'] = 0
-    else:
-        raise Exception('invalid report type: %s' % type)
-
-    url = generateNagiosUrl (action, args)
-    response = loadUrl(url, '')
-    return processNagiosReport(response, argdict['debug'])
-
 def updateHost(host, arghash):
     """
     Update information from a host.  If the host does not already exist, 
     we'll call createHost instead.
     """
 
-    if readHost(host, arghash):
-        pass
+    if readHost(host, arghash): pass
     else:
         return createHost(host, arghash)
 
@@ -433,3 +457,24 @@ def discoverServicesHost(host, arghash):
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
+#########################################################################
+### Nagios API Commands #################################################
+#########################################################################
+
+def nagiosAck(params):
+    """
+    Acknowledge an alert in Nagios.  Returns a report, but the report may
+    not be very helpful.
+    """
+    url = generateNagiosUrl('ack', params)
+    reponse = loadUrl(url, '')
+    return processNagiosReport(reponse, params['debug'])
+
+def nagiosDowntime(params):
+    """
+    Schedule downtime in Nagios.  Returns a report, but the report may
+    not be very helpful.
+    """
+    url = generateNagiosUrl('downtime', params)
+    reponse = loadUrl(url, '')
+    return processNagiosReport(reponse, params['debug'])

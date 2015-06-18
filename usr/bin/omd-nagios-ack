@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+# Acknowledge host/service problems through OMD API
+
+#########################################################################
+### Declarations ########################################################
+#########################################################################
+
+import getpass, omdclient, optparse, sys
+
+#########################################################################
+### Configuration #######################################################
+#########################################################################
+## Managed via central libraries and /etc/omd_client
+
+config_file = '/etc/omdclient/config.yaml'
+
+## Text for --help
+text = "acknowledge problems using OMD API"
+usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
+
+#########################################################################
+### main () #############################################################
+#########################################################################
+
+def main():
+    try:
+        config = omdclient.loadCfg (config_file)
+    except Exception, e:
+        print "failed to load config: %s" % (e)
+        sys.exit(3)
+
+    p = omdclient.generateParser(text, usage_text, config)
+    p.add_option ('--whoami', dest='whoami', action='store',
+        default=getpass.getuser(),
+        help='invoking user (default: %default)')
+    opt, args = p.parse_args()
+    params= omdclient.parserArgDict(opt)
+    params['whoami'] = opt.whoami
+
+    if len(args) < 3:
+        p.print_help()
+        sys.exit(1)
+
+    type = args[0]
+    if type == 'host':
+        params['host'] = args[1]
+        params['service'] = None
+        params['comment'] = ' '.join(args[2:])
+        params['type'] = 'host'
+        svc_text = '%s' % (params['host'])
+
+    elif (type == 'service' or type == 'svc') and len(args) >= 4:
+        params['host'] = args[1]
+        params['service'] = args[2]
+        params['comment'] = ' '.join(args[3:])
+        params['type'] = 'service'
+        svc_text = '%s/%s' % (params['host'], params['service'])
+
+    else:
+        p.print_help()
+        sys.exit(1)
+
+    params['comment'] = "%s (%s)" % (params['comment'], params['whoami'])
+
+    try:
+        report = omdclient.nagiosAck(params)
+
+        if len(report) > 0:
+            print "%s - acknowledged (probably)" \
+                % (svc_text)
+            sys.exit(0)
+        else:
+            print "%s - no matching entries (probably failed)" \
+                % (svc_text)
+            sys.exit(1)
+
+    except Exception, e:
+        print "failed to run: %s" % (e)
+        sys.exit(-1)
+
+if __name__ == "__main__":
+    main()
+
+#########################################################################
+### POD Documentation ###################################################
+#########################################################################
+
+"""
+
+=head1 NAME
+
+omd-nagios-ack - acknowledge a host or service problem
+
+=head1 SYNOPSIS
+
+B<omd-nagios-ack> host cmsadmin1 'known host is down'
+
+B<omd-nagios-ack> service cmsadmin1 puppet-report 'known problem'
+
+=head1 USAGE
+
+omd-nagios-ack uses the OMD autmation API to acknowledge a host or service
+alert.  It works on the standard nagios limitations - you can send a
+request, but there's no way to get back a response.  We try to guess a
+response anyway, but it's not horribly reliable.
+
+=head1 ARGUMENTS
+
+=head1 REQUIRED
+
+=over 4
+
+=item I<host|service>
+
+Are we ack'ing a host or a service?
+
+=item I<HOSTNAME>
+
+Hostname of the host or service.
+
+=item [I<SERVICE>]
+
+Service name of the service (only necessary for service requests).
+
+=item I<COMMENT>
+
+Some explanatory text.
+
+=back
+
+=head2 OPTIONS
+
+=over 4
+
+=item B<--debug>
+
+If set, print debugging information.
+
+=item B<--apikey> I<key>
+
+Password for the API User.  Default: comes from the configuration file.
+
+=item B<--server> I<server>
+
+Host name of the server.  Default: comes from the configuration file.
+
+=item B<--site> I<site>
+
+Site name within the server.  Default: comes from the configuration file.
+
+=item B<--user> I<user>
+
+API User name.  The user must exist on the server, and be an 'automation
+user'.  Default: comes from the configuration file.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/omdclient/config.yaml>
+
+=back
+
+=head1 SEE ALSO
+
+https://mathias-kettner.de/checkmk_wato_webapi.html
+
+=head1 AUTHOR
+
+Tim Skirvin <tskirvin@fnal.gov>
+
+=head1 LICENSE + COPYRIGHT
+
+Copyright 2015, Fermi National Accelerator Laboratory
+
+This program is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+"""
