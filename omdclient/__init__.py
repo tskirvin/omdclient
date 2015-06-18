@@ -12,7 +12,7 @@ config = {}
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, json, optparse, os, requests, sys, urllib, urllib2, yaml
+import datetime, json, optparse, os, re, sys, urllib, urllib2, yaml
 from bs4 import BeautifulSoup
 from pprint import pprint
 
@@ -150,118 +150,6 @@ def generateUrl (action, args):
 
     return '&'.join(url_parts)
 
-def generateNagiosUrl (action, args):
-    """
-    Generate the URL used to interact with the server.  
-       action   What action are we taking?  Valid options:
-
-           ack
-           downtime
-           hostreport
-           svcreport
-           
-       args     Argument dict.  You must have at least these keys:
-
-           apikey
-           server
-           site
-           user
-           view_name
-
-                ...and you can optionally include:
-
-            ack     Associated with hostreport and svcreport; if set,
-                    we will only load acknowledged (1) or unacknowledged
-                    (0) alerts.
-            end     Associated with 'downtime': a datetime object 
-                    indicating the end of the work.  If not offered,
-                    we'll use start + 'hours' hours.
-            hours   Associated with 'downtime'; indicates a number of
-                    hours of downtime.  Used if we don't have a set 
-                    'end' time.
-            host    Associated with 'downtime' and 'ack': hostname.
-            service Associated with 'downtime' and 'ack': service name.
-            start   Associated with 'downtime'; a datetime object
-                    indicating the start of the work.  If not offered,
-                    we'll just use 'now()'.
-            type    Associated with 'ack' or 'downtime'; must be one of 
-                    'host' or 'service'.
-
-    If 'debug' is set, we'll print the URL to stdout (with the password 
-    blanked out).
-    """
-    baseurl = 'https://%s/%s/check_mk/view.py' % (args['server'], args['site'])
-    url_parts = {}
-    url_parts['_username']     = args['user']
-    url_parts['_secret']       = args['apikey']
-    url_parts['output_format'] = 'json'
-
-    if action == 'hostreport':
-        url_parts['view_name'] = 'hostproblems_expanded'
-        if 'ack' in args.keys():
-            url_parts['is_host_acknowledged'] = args['ack']
-
-    elif action == 'svcreport':
-        url_parts['view_name'] = 'svcproblems_expanded'
-        if 'ack' in args.keys():
-            url_parts['is_service_acknowledged'] = args['ack']
-
-    elif action == 'downtime':
-        url_parts['_transid'] = '-1'
-        url_parts['_do_confirm'] = 'yes'
-        url_parts['_do_actions'] = 'yes'
-
-        if 'start' in args.keys(): start = args['start']
-        else:                      start = datetime.datetime.now()
-        if 'end' in args.keys():   end   = args['end']
-        else:             
-            end = start + datetime.timedelta(hours=int(args['hours']))
-
-        url_parts['_down_custom']    = 'Custom+time_range'
-        url_parts['_down_from_date'] = start.date() 
-        url_parts['_down_from_time'] = start.strftime('%H:%M:%S')
-        url_parts['_down_to_date']   = end.date()
-        url_parts['_down_to_time']   = end.strftime('%H:%M:%S')
-        url_parts['_down_comment']   = args['comment']
-
-        if args['type'] == 'host':
-            url_parts['host']      = args['host']
-            url_parts['view_name'] = 'hoststatus'
-        elif args['type'] == 'svc' or args['type'] == 'service':
-            url_parts['host']      = args['host']
-            url_parts['service']   = args['service']
-            url_parts['view_name'] = 'service'
-        else:
-            raise Exception('invalid ack type: %s' % args['type'])
-        
-    elif action == 'ack':
-        url_parts['_transid'] = '-1'
-        url_parts['_do_confirm'] = 'yes'
-        url_parts['_do_actions'] = 'yes'
-
-        url_parts['_ack_comment'] = args['comment']
-        url_parts['_acknowledge'] = 'Acknowledge'
-        if args['type'] == 'host':
-            url_parts['host']      = args['host']
-            url_parts['view_name'] = 'hoststatus'
-        elif args['type'] == 'svc' or args['type'] == 'service':
-            url_parts['host']      = args['host']
-            url_parts['service']   = args['service']
-            url_parts['view_name'] = 'service'
-        else:
-            raise Exception('invalid ack type: %s' % args['type'])
-
-    else:
-        raise Exception('invalid action: %s' % action)
-
-    if args['debug']:
-        url_parts_clean = dict(url_parts)
-        url_parts_clean['_secret'] = '...'
-        print "url: %s?%s" % (baseurl, urllib.urlencode(url_parts_clean))
-
-    url = "%s?%s" % (baseurl, urllib.urlencode(url_parts))
-    return url
-
 def loadUrl (url, request_string):
     """
     Load the URL and request string pair.  Returns a urllib2 response.
@@ -313,37 +201,6 @@ def processUrlResponse(response, debug):
         return False, jsonresult['result']
 
     return False, result
-
-def processNagiosReport(response, debug):
-    """
-    Process the response from loadUrl().  Returns an array of matching
-    objects, where we've trimmed off the first one (which described the
-    fields of the later objects).
-
-    If 'debug' is set, we'll print a lot of extra debugging information.
-    """
-
-    data=response.read()
-
-    try:
-        jsonresult=json.loads(data)
-        if debug: pprint(jsonresult)
-    except ValueError:
-        soup=BeautifulSoup(data)
-        div1=soup.find('div', attrs={'class':'error'})
-        if div1 != None:
-            print "Error returned"
-            print div1.string
-            return False, None
-        else:
-            print "ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:"
-            print data
-            return False, None
-
-    if len(jsonresult) <= 1: return []
-
-    headers = jsonresult.pop(0)
-    return jsonresult
 
 #########################################################################
 ### WATO API Interactions ###############################################
@@ -461,14 +318,127 @@ def discoverServicesHost(host, arghash):
 ### Nagios API Commands #################################################
 #########################################################################
 
+def generateNagiosUrl (action, args):
+    """
+    Generate the URL used to interact with the server.  
+       action   What action are we taking?  Valid options:
+
+           ack
+           downtime
+           hostreport
+           svcreport
+           
+       args     Argument dict.  You must have at least these keys:
+
+           apikey
+           server
+           site
+           user
+           view_name
+
+                ...and you can optionally include:
+
+            ack     Associated with hostreport and svcreport; if set,
+                    we will only load acknowledged (1) or unacknowledged
+                    (0) alerts.
+            end     Associated with 'downtime': a datetime object 
+                    indicating the end of the work.  If not offered,
+                    we'll use start + 'hours' hours.
+            hours   Associated with 'downtime'; indicates a number of
+                    hours of downtime.  Used if we don't have a set 
+                    'end' time.
+            host    Associated with 'downtime' and 'ack': hostname.
+            service Associated with 'downtime' and 'ack': service name.
+            start   Associated with 'downtime'; a datetime object
+                    indicating the start of the work.  If not offered,
+                    we'll just use 'now()'.
+            type    Associated with 'ack' or 'downtime'; must be one of 
+                    'host' or 'service'.
+
+    If 'debug' is set, we'll print the URL to stdout (with the password 
+    blanked out).
+    """
+    baseurl = 'https://%s/%s/check_mk/view.py' % (args['server'], args['site'])
+    url_parts = {}
+    url_parts['_username']     = args['user']
+    url_parts['_secret']       = args['apikey']
+    url_parts['output_format'] = 'json'
+
+    if action == 'hostreport':
+        url_parts['view_name'] = 'hostproblems_expanded'
+        if 'ack' in args.keys():
+            url_parts['is_host_acknowledged'] = args['ack']
+
+    elif action == 'svcreport':
+        url_parts['view_name'] = 'svcproblems_expanded'
+        if 'ack' in args.keys():
+            url_parts['is_service_acknowledged'] = args['ack']
+
+    elif action == 'downtime':
+        url_parts['_transid'] = '-1'
+        url_parts['_do_confirm'] = 'yes'
+        url_parts['_do_actions'] = 'yes'
+
+        if 'start' in args.keys(): start = args['start']
+        else:                      start = datetime.datetime.now()
+        if 'end' in args.keys():   end   = args['end']
+        else:             
+            end = start + datetime.timedelta(hours=int(args['hours']))
+
+        url_parts['_down_custom']    = 'Custom+time_range'
+        url_parts['_down_from_date'] = start.date() 
+        url_parts['_down_from_time'] = start.strftime('%H:%M:%S')
+        url_parts['_down_to_date']   = end.date()
+        url_parts['_down_to_time']   = end.strftime('%H:%M:%S')
+        url_parts['_down_comment']   = args['comment']
+
+        if args['type'] == 'host':
+            url_parts['host']      = args['host']
+            url_parts['view_name'] = 'hoststatus'
+        elif args['type'] == 'svc' or args['type'] == 'service':
+            url_parts['host']      = args['host']
+            url_parts['service']   = args['service']
+            url_parts['view_name'] = 'service'
+        else:
+            raise Exception('invalid ack type: %s' % args['type'])
+        
+    elif action == 'ack':
+        url_parts['_transid'] = '-1'
+        url_parts['_do_confirm'] = 'yes'
+        url_parts['_do_actions'] = 'yes'
+
+        url_parts['_ack_comment'] = args['comment']
+        url_parts['_acknowledge'] = 'Acknowledge'
+        if args['type'] == 'host':
+            url_parts['host']      = args['host']
+            url_parts['view_name'] = 'hoststatus'
+        elif args['type'] == 'svc' or args['type'] == 'service':
+            url_parts['host']      = args['host']
+            url_parts['service']   = args['service']
+            url_parts['view_name'] = 'service'
+        else:
+            raise Exception('invalid ack type: %s' % args['type'])
+
+    else:
+        raise Exception('invalid action: %s' % action)
+
+    if args['debug']:
+        url_parts_clean = dict(url_parts)
+        url_parts_clean['_secret'] = '...'
+        print "url: %s?%s" % (baseurl, urllib.urlencode(url_parts_clean))
+
+    url = "%s?%s" % (baseurl, urllib.urlencode(url_parts))
+    return url
+
+
 def nagiosAck(params):
     """
     Acknowledge an alert in Nagios.  Returns a report, but the report may
     not be very helpful.
     """
     url = generateNagiosUrl('ack', params)
-    reponse = loadUrl(url, '')
-    return processNagiosReport(reponse, params['debug'])
+    response = loadUrl(url, '')
+    return processNagiosReport(response, params['debug'])
 
 def nagiosDowntime(params):
     """
@@ -476,5 +446,43 @@ def nagiosDowntime(params):
     not be very helpful.
     """
     url = generateNagiosUrl('downtime', params)
-    reponse = loadUrl(url, '')
-    return processNagiosReport(reponse, params['debug'])
+    response = loadUrl(url, '')
+    return processNagiosReport(response, params['debug'])
+
+def processNagiosReport(response, debug):
+    """
+    Process the response from loadUrl().  Returns an array of matching
+    objects, where we've trimmed off the first one (which described the
+    fields of the later objects).
+
+    If 'debug' is set, we'll print a lot of extra debugging information.
+
+    Incidentally, we're doing some really ugly stuff here because check_mk
+    isn't always returning with json, even when we ask it to.
+    """
+
+    data=response.read()
+
+    try:
+        jsonresult=json.loads(data)
+        if debug: pprint(jsonresult)
+    except ValueError:
+        lines = data.split('\n')
+        if re.match('^MESSAGE: .*$', lines[0]):
+            return lines[0]
+        soup=BeautifulSoup(data)
+        div1=soup.find('div', attrs={'class':'error'})
+        if div1 != None:
+            print "Error returned"
+            print div1.string
+            return []
+        else:
+            print "ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:"
+            print data
+            return []
+
+    if len(jsonresult) <= 1: return []
+
+    headers = jsonresult.pop(0)
+    return jsonresult
+
