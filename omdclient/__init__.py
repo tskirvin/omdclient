@@ -449,6 +449,31 @@ def nagiosDowntime(params):
     response = loadUrl(url, '')
     return processNagiosReport(response, params['debug'])
 
+def nagiosReport(type, argdict):
+    """
+    Generate a nagios report.  Type can be one of 'svc_ack', 'svc_unack',
+    'host_ack', or 'host_unack'.
+    """
+    args = argdict.copy()
+    if   type == 'svc_ack':
+        action = 'svcreport'
+        args['ack'] = 1
+    elif type == 'svc_unack':
+        action = 'svcreport'
+        args['ack'] = 0
+    elif type == 'host_ack':
+        action = 'hostreport'
+        args['ack'] = 1
+    elif type == 'host_unack':
+        action = 'hostreport'
+        args['ack'] = 0
+    else:
+        raise Exception('invalid report type: %s' % type)
+
+    url = generateNagiosUrl (action, args)
+    response = loadUrl(url, '')
+    return processNagiosReport(response, argdict['debug'])
+
 def processNagiosReport(response, debug):
     """
     Process the response from loadUrl().  Returns an array of matching
