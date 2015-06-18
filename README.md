@@ -9,7 +9,7 @@ with the `check_mk`/Open Monitoring Distribution tool suite
 WATO is used to create, remove, and modify entries within the OMD user
 suite.  This is documented at:
 
-   http://mathias-kettner.com/checkmk_wato_webapi.html
+http://mathias-kettner.com/checkmk_wato_webapi.html
 
 ### omd-host-crud
 
@@ -27,11 +27,11 @@ monitoring instance.  In essence, we want to add hosts to monitoring when
 a host is added to puppet; remove the host from monitoring when the host
 is removed from puppet; and re-tag the host when its role changes.  
 
-   https://docs.puppetlabs.com/guides/external_nodes.html
+https://docs.puppetlabs.com/guides/external_nodes.html
 
 ## Multisite/Nagios
 
-   https://mathias-kettner.de/checkmk_multisite_automation.html
+https://mathias-kettner.de/checkmk_multisite_automation.html
 
 ### omd-nagios-ack
 
