@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.0
+Version:        1.1.1
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://cms-git.fnal.gov/omdclient.git
@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Thu Jun 25 2015  Tim Skirvin <tskirvin@fnal.gov>      1.1.1-0
+- omd-puppet-enc - sends shyaml errors to stderr
+
 * Mon Jun 15 2015  Tim Skirvin <tskirvin@fnal.gov>      1.1.0-0
 - added omd-nagios-report, omd-nagios-ack, omd-nagios-downtime
 - fixed the git post-receive hook

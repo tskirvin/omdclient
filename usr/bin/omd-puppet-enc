@@ -12,9 +12,9 @@ fi
 ENC_HOST=`basename $FILE | sed -e 's/\..*\.yaml//'`
 
 if   [[ $ACTION == 'update' ]]; then
-    CMK_ROLE=`cat $FILE     | shyaml get-value parameters.checkmk_role 2>&/dev/null`
-    CMK_INSTANCE=`cat $FILE | shyaml get-value parameters.checkmk_instance 2>&/dev/null`
-    CMK_EXTRA=`cat $FILE    | shyaml get-values parameters.checkmk_extra 2>&/dev/null`
+    CMK_ROLE=`cat $FILE     | shyaml get-value parameters.checkmk_role 2>/dev/null`
+    CMK_INSTANCE=`cat $FILE | shyaml get-value parameters.checkmk_instance 2>/dev/null`
+    CMK_EXTRA=`cat $FILE    | shyaml get-values parameters.checkmk_extra 2>/dev/null`
 
     if [[ $CMK_EXTRA =~ 'unmonitored' ]]; then
         CMD="omd-host-crud delete $ENC_HOST"
