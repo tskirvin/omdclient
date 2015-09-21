@@ -97,6 +97,17 @@ def main():
                 print "%s - %s" % (host, result1)
                 sys.exit(0)
 
+        elif request == 'inventory':
+            value1, result1 = omdclient.discoverServicesHost(host, argdict)
+            if value1 == False:
+                if result == None: print "%s - unknown error" % host
+                else:              print "error on inventory: %s" % result
+                sys.exit(1)
+            else:
+                print "%s - %s" % (host, result1)
+                sys.exit(0)
+
+
         elif request == 'read':
             value, result = omdclient.readHost(host, argdict)
             if value == False:
@@ -135,6 +146,7 @@ def main():
                 print "%s - host deleted" % host
                 sys.exit(0)
 
+
         else:
             p.print_help('invalid request name: %s' % request)
             sys.exit(1)
@@ -160,6 +172,8 @@ omd-host-crud - create/read/update/delete omd host entries
 
 B<omd-host-crud> create cms-foo --role unconfigured
 
+B<omd-host-crud> inventory cms-foo 
+
 B<omd-host-crud> read cms-foo 
 
 B<omd-host-crud> update cms-foo --instance dev
@@ -179,7 +193,7 @@ to the OMD/WATO check_mk web interface.
 
 =item I<action>
 
-create, read, update, delete.
+create, inventory, read, update, delete.
 
 =item I<hostname>
 

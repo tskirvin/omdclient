@@ -296,6 +296,14 @@ def updateHost(host, arghash):
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
+def listHosts(arghash):
+    """
+    List all hosts.
+    """
+    url = generateUrl('get_all_hosts', arghash)
+    response = loadUrl(url, '')
+    return processUrlResponse(response, arghash['debug'])
+
 def deleteHost(host, arghash):
     """
     Remove a host from check_mk.

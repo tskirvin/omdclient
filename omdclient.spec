@@ -1,9 +1,9 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.1
+Version:        1.1.2
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
-URL:            http://cms-git.fnal.gov/omdclient.git
+URL:            http://github.com/tskirvin/omdclient.git
 
 License:        Artistic 2.0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -62,6 +62,12 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Thu Jun 25 2015  Tim Skirvin <tskirvin@fnal.gov>      1.1.2-0
+- omd-puppet-crud - adds 'inventory' option (kinda cheating)
+
+* Thu Jun 25 2015  Tim Skirvin <tskirvin@fnal.gov>      1.1.2-0
+- omd-puppet-enc - sends shyaml errors to stderr
+
 * Thu Jun 25 2015  Tim Skirvin <tskirvin@fnal.gov>      1.1.1-0
 - omd-puppet-enc - sends shyaml errors to stderr
 
