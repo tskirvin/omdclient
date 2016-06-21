@@ -395,9 +395,9 @@ def generateNagiosUrl (action, args):
 
         url_parts['_down_custom']    = 'Custom+time_range'
         url_parts['_down_from_date'] = start.date() 
-        url_parts['_down_from_time'] = start.strftime('%H:%M:%S')
+        url_parts['_down_from_time'] = start.strftime('%H:%M')
         url_parts['_down_to_date']   = end.date()
-        url_parts['_down_to_time']   = end.strftime('%H:%M:%S')
+        url_parts['_down_to_time']   = end.strftime('%H:%M')
         url_parts['_down_comment']   = args['comment']
 
         if args['type'] == 'host':
@@ -408,7 +408,7 @@ def generateNagiosUrl (action, args):
             url_parts['service']   = args['service']
             url_parts['view_name'] = 'service'
         else:
-            raise Exception('invalid ack type: %s' % args['type'])
+            raise Exception('invalid downtime type: %s' % args['type'])
         
     elif action == 'ack':
         url_parts['_transid'] = '-1'
@@ -475,6 +475,10 @@ def nagiosReport(type, argdict):
     elif type == 'host_unack':
         action = 'hostreport'
         args['ack'] = 0
+    elif type == 'host':
+        action = 'hostreport'
+    elif type == 'hostservice':
+        action = 'svcreport'
     else:
         raise Exception('invalid report type: %s' % type)
 
