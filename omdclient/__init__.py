@@ -128,6 +128,7 @@ def generateUrl (action, args):
 
     elif action == 'discover_services':
         url_parts.append('action=discover_services')
+        url_parts.append('mode=refresh')
 
     elif action == 'get_all_hosts':
         url_parts.append('action=get_all_hosts')

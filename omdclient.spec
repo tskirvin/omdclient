@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.4
+Version:        1.1.5
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Tue Jun 21 2016   Tim Skirvin <tskirvin@fnal.gov>     1.1.5-0
+- omdclient/__init.py__ - inventories now do tabula rasa refresh
+
 * Tue Jun 21 2016   Tim Skirvin <tskirvin@fnal.gov>     1.1.4-0
 - omd-nagios-hosts-with-problem - discover hosts with a given problem
 - omd-reinventory - start a reinventory of a given host
