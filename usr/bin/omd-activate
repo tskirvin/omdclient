@@ -30,8 +30,12 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
+    p.add_option('--foreign_ok', dest='foreign_ok',
+        action="store_true", default=True,
+        help="apply foreign commits? (default: %default)")
     opt, args = p.parse_args()
     argdict = omdclient.parserArgDict(opt)
+    argdict['foreign_ok'] = opt.foreign_ok
 
     try:
         value, result = omdclient.activateChanges(argdict)

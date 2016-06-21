@@ -30,8 +30,12 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
+    p.add_option('--tabula_rasa', dest='tabula_rasa',
+        action="store_true", default=True,
+        help="tabula-rasa refresh? (default: %default)")
     opt, args = p.parse_args()
     argdict = omdclient.parserArgDict(opt)
+    argdict['tabula_rasa'] = opt.tabula_rasa
 
     error = 0
     for host in args:
