@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.3
+Version:        1.1.4
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -62,7 +62,11 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
-* Wed Jan 15 2016   Tim Skirvin <tskirvin@fnal.gov>     1.1.3-0
+* Tue Jun 21 2016   Tim Skirvin <tskirvin@fnal.gov>     1.1.4-0
+- omd-nagios-hosts-with-problem - discover hosts with a given problem
+- omd-reinventory - start a reinventory of a given host
+
+* Wed Jun 15 2016   Tim Skirvin <tskirvin@fnal.gov>     1.1.3-0
 - omd-nagos-report - skips errors on service prints rather than crashing
 - omdclient/__init__.py - actually sets downtimes now (I had the required
   date format wrong)
