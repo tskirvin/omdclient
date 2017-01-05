@@ -3,7 +3,6 @@
 omdclient provides a suite of tools to interact with the APIs associated
 with the `check_mk`/Open Monitoring Distribution tool suite
 
-
 ## WATO APIs
 
 WATO is used to create, remove, and modify entries within the OMD user
@@ -55,3 +54,18 @@ You'll have to populate this file on your own:
     site: 'xxxxxx'
     user: 'xxxx-api'
     apikey: 'xxxxxx'
+
+### Configuration of 'expanded views'
+
+The report scripts depend on 'expanded view' versions of the
+`hostproblems` and `svcproblems` views, which add comments.  In order to
+add these, you generally have to:
+
+1.  Edit view `hostproblems` - it's a default view, so you'll go to 'clone'.
+    * Change the name from `hostproblems` to `hostproblems_expanded`.
+    * Scroll down to the list of columns, and add one more: `Host Comments`.
+    * Save.
+2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same 
+    as above but with the column `Service Comments`.
+
+(Thanks to Christian Bryn - https://github.com/epleterte - for the docs!)
