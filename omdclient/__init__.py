@@ -240,8 +240,8 @@ def createHost(host, arghash):
         if arghash['instance'] != 'UNSET':
             attributes['tag_instance'] = arghash['instance']
     if 'extra' in arghash:
-        if arghash['extra'] != 'UNSET':
-            attributes['extra'] = arghash['extra']
+        import shlex
+        attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
     request['attributes'] = attributes
 
     url = generateUrl ('add_host', arghash)
