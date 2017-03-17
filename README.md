@@ -64,6 +64,6 @@ They can both be made manually by following these steps:
 * Login to your Check MK instance
 * Open 'Host Problems'
 * Edit the view - since this is a default view, you will automatically be taken to 'clone' the view rather than edit. 
-  * Change the name of the view from _hostproblems_ to _hostproblems___expanded_ 
+  * Change the name of the view from _hostproblems_ to _hostproblems_expanded_ 
   * Go down to the list of columns, and add one more: "Host comments" (find the appropriate column entry).
 * Repeat the above for _serviceproblems_, add column 'Service Problems'
