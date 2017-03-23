@@ -157,7 +157,13 @@ def loadUrl (url, request_string):
     Load the URL and request string pair.  Returns a urllib2 response.
     """
     try:
-        response = urllib2.urlopen(url, request_string)
+        import ssl
+
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        #response = urllib2.urlopen(url, request_string)
+        response = urllib2.urlopen(url, request_string, context=ctx)
     except urllib2.HTTPError, err:
         if err.code == 404:
             raise Exception('Page not found')
@@ -239,6 +245,9 @@ def createHost(host, arghash):
     if 'instance' in arghash:
         if arghash['instance'] != 'UNSET':
             attributes['tag_instance'] = arghash['instance']
+    if 'ip' in arghash:
+        if arghash['ip'] != 'UNSET':
+            attributes['ipaddress'] = arghash['ip']
     if 'extra' in arghash:
         import shlex
         attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))

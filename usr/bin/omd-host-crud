@@ -21,6 +21,7 @@ role     = 'UNSET'
 instance = 'UNSET'
 extra    = 'UNSET'
 folder   = 'UNSET'
+ip       = 'UNSET'
 
 
 ## Text for --help
@@ -65,6 +66,8 @@ def main():
         help='extra flags (space separated, default: %default)')
     group.add_option('--folder', dest='folder', default=folder,
         help='set WATO folder (default: %default)')
+    group.add_option('--ip', dest='ip', default=ip,
+        help='set IP address')
     p.add_option_group(group)
     opt, args = p.parse_args()
 
@@ -74,6 +77,8 @@ def main():
     argdict['extra']    = opt.extra
     if not opt.folder == 'UNSET':
         argdict['folder']   = opt.folder
+    if not opt.ip == 'UNSET':
+        argdict['ip']   = opt.ip
 
     if len(args) != 2:
         p.print_help()
