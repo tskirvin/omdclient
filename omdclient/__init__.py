@@ -12,7 +12,7 @@ config = {}
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, json, optparse, os, re, sys, urllib, urllib2, yaml
+import datetime, json, optparse, os, re, ssl, sys, urllib, urllib2, yaml
 from bs4 import BeautifulSoup
 from pprint import pprint
 
@@ -157,13 +157,7 @@ def loadUrl (url, request_string):
     Load the URL and request string pair.  Returns a urllib2 response.
     """
     try:
-        import ssl
-
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        #response = urllib2.urlopen(url, request_string)
-        response = urllib2.urlopen(url, request_string, context=ctx)
+        response = urllib2.urlopen(url, request_string)
     except urllib2.HTTPError, err:
         if err.code == 404:
             raise Exception('Page not found')

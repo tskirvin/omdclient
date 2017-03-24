@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.5
-Release:        1%{?dist}
+Version:        1.1.6
+Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -62,6 +62,14 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Tue Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.6-0
+- omd-nagios-hostlist
+- some additional changes from epleterte involving IP addresses
+
+- omdclient/__init.py__ - inventories can now choose to do tabula rasa
+- omd-reinventory - allowed to select tabula rasa
+- omd-activate - allows us to activate foreign keys
+
 * Tue Jun 21 2016   Tim Skirvin <tskirvin@fnal.gov>     1.1.5-1
 - omdclient/__init.py__ - inventories can now choose to do tabula rasa
 - omd-reinventory - allowed to select tabula rasa
