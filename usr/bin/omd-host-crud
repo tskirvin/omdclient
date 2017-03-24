@@ -20,6 +20,8 @@ config_file = '/etc/omdclient/config.yaml'
 role     = 'UNSET'
 instance = 'UNSET'
 extra    = 'UNSET'
+folder   = 'UNSET'
+ip       = 'UNSET'
 
 
 ## Text for --help
@@ -62,6 +64,10 @@ def main():
         help='instance name (default: %default)')
     group.add_option('--extra', dest='extra', default=extra,
         help='extra flags (space separated, default: %default)')
+    group.add_option('--folder', dest='folder', default=folder,
+        help='set WATO folder (default: %default)')
+    group.add_option('--ip', dest='ip', default=ip,
+        help='set IP address')
     p.add_option_group(group)
     opt, args = p.parse_args()
 
@@ -69,6 +75,10 @@ def main():
     argdict['instance'] = opt.instance
     argdict['role']     = opt.role
     argdict['extra']    = opt.extra
+    if not opt.folder == 'UNSET':
+        argdict['folder']   = opt.folder
+    if not opt.ip == 'UNSET':
+        argdict['ip']   = opt.ip
 
     if len(args) != 2:
         p.print_help()

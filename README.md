@@ -55,6 +55,7 @@ You'll have to populate this file on your own:
     user: 'xxxx-api'
     apikey: 'xxxxxx'
 
+
 ### Configuration of 'expanded views'
 
 The report scripts depend on 'expanded view' versions of the
