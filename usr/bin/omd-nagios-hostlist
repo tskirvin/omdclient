@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+"""
+List all hosts in Nagios.
+"""
+
+#########################################################################
+### Declarations ########################################################
+#########################################################################
+
+import omdclient, optparse, re, sys
+
+#########################################################################
+### Configuration #######################################################
+#########################################################################
+
+## Central configuration file.
+config_file = '/etc/omdclient/config.yaml'
+
+## Text for --help
+text = "List all hosts in Nagios, using the WATO API"
+usage_text = "usage: %prog PROBLEM [options]"
+
+#########################################################################
+### main () #############################################################
+#########################################################################
+
+def main():
+    try:
+        config = omdclient.loadCfg (config_file)
+    except Exception, e:
+        print "failed to load config: %s" % (e)
+        sys.exit(3)
+
+    p = omdclient.generateParser(text, usage_text, config)
+    p.add_option('--verbose', dest='verbose', action="store_true",
+        default=False, help='print more status information')
+    opt, args = p.parse_args()
+
+    argdict = omdclient.parserArgDict(opt)
+
+    try:
+        hosts = omdclient.listHosts(argdict)
+        h = []
+        for i in hosts[1]:
+            if i: h.append(i)
+        h.sort()
+        for i in h: print i
+
+    except Exception, e:
+        print "failed: %s" % (e)
+        sys.exit(-1)
+
+if __name__ == "__main__":
+    main()
+
+#########################################################################
+### POD Documentation ###################################################
+#########################################################################
+
+"""
+
+=head1 NAME
+
+omd-nagios-hostlist - list all hosts in nagios
+
+=head1 SYNOPSIS
+
+B<omd-nagios-hostlist>
+
+=head1 USAGE
+
+omd-nagios-hostlist pulls the list of monitored hosts from check_mk and
+prints them to STDOUT.
+
+=head1 ARGUMENTS
+
+=head2 DEFAULT
+
+=over 4
+
+=item B<--debug>
+
+If set, print debugging information.
+
+=item B<--help>
+
+Print this information and exit.
+
+=back
+
+=head2 CONNECTION OPTIONS
+
+=over 4
+
+=item B<--apikey> I<key>
+
+Password for the API User.  Default: comes from the configuration file.
+
+=item B<--server> I<server>
+
+Host name of the server.  Default: comes from the configuration file.
+
+=item B<--site> I<site>
+
+Site name within the server.  Default: comes from the configuration file.
+
+=item B<--user> I<user>
+
+API User name.  The user must exist on the server, and be an 'automation
+user'.  Default: comes from the configuration file.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/omdclient/config.yaml>
+
+=back
+
+=head1 SEE ALSO
+
+https://mathias-kettner.de/checkmk_wato_webapi.html
+
+=head1 AUTHOR
+
+Tim Skirvin <tskirvin@fnal.gov>
+
+=head1 LICENSE + COPYRIGHT
+
+Copyright 2017, Fermi National Accelerator Laboratory
+
+This program is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+"""
