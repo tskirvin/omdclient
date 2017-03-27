@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.6
+Version:        1.1.7
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Tue Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.7-0
+- omd-nagios-report - now deals with UTF-8 better
+
 * Tue Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.6-0
 - omd-nagios-hostlist
 - some additional changes from epleterte involving IP addresses

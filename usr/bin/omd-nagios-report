@@ -30,8 +30,7 @@ def printHostReport(array):
     (host, icons, state, text, svc_ok, svc_warn, svc_crit, svc_unknown, 
         svc_pending, state_age, comments) = array
     print "%-45s  %-4s  %.25s" % (host, state, state_age)
-    # print "  %-76.76s" % text
-    print "  %s" % text
+    print "  %s" % text.encode('utf-8')
     if comments:
         p = re.compile ('\(Nagios Process\): This .* has been scheduled for fixed downtime')
         comments = p.sub ('DOWNTIME', comments)
@@ -45,7 +44,7 @@ def printSvcReport(array):
     (crit, host, svc, tags, text, state_age, check_age, perfometer, \
         comments) = array
     print "%-45s  %-4s  %.25s" % ("%s/%s" % (host, svc), crit, state_age)
-    print "  %s" % text
+    print "  %s" % text.encode('utf-8')
     if comments:
         print "  ACK: %-70.70s" % comments
 
