@@ -288,9 +288,13 @@ def updateHost(host, arghash):
     if 'instance' in arghash:
         if arghash['instance'] != 'UNSET':
             attributes['tag_instance'] = arghash['instance']
+    if 'ip' in arghash:
+        if arghash['ip'] != 'UNSET':
+            attributes['ipaddress'] = arghash['ip']
     if 'extra' in arghash:
-        if arghash['extra'] != 'UNSET':
-            attributes['extra'] = arghash['extra']
+        if arghash['extra'] != 'UNSET' and '=' in arghash['extra']:
+            import shlex
+            attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
     request['attributes'] = attributes
 
     if 'unset' in arghash:
