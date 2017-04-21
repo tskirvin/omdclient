@@ -243,8 +243,9 @@ def createHost(host, arghash):
         if arghash['ip'] != 'UNSET':
             attributes['ipaddress'] = arghash['ip']
     if 'extra' in arghash:
-        import shlex
-        attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
+        if arghash['extra'] != 'UNSET' and '=' in arghash['extra']:
+          import shlex
+          attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
     request['attributes'] = attributes
 
     url = generateUrl ('add_host', arghash)
