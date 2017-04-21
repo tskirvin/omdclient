@@ -128,12 +128,15 @@ def main():
                 printReport(result, opt)
                 sys.exit(0)
 
+        #If update fails, will try to create the node.
         elif request == 'update':
             value, result = omdclient.updateHost(host, argdict)
             if value == False:
-                if result == None: print "%s - unknown error" % host
-                else:              print "error on update: %s" % result
-                sys.exit(1)
+                value, result = omdclient.createHost(host, argdict)
+                if value == False:
+                    if result == None: print "%s - unknown error" % host
+                    else:              print "error on update and on create: %s" % result
+                    sys.exit(1)
 
             print "%s - host updated, will now inventory..." % host
 
