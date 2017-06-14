@@ -39,10 +39,12 @@ def printReport(result, opt):
     """
     att = result['attributes']
     print result['hostname']
-    if att['alias']:
+    if att.get('alias', None):
         print "  %-20s %s" % ('alias', att['alias'])
-    print "  %-20s %s" % ('cmk_role',     att['tag_role'])
-    print "  %-20s %s" % ('cmk_instance', att['tag_instance'])
+    if att.get('tag_role', None):
+        print "  %-20s %s" % ('cmk_role',     att['tag_role'])
+    if att.get('tag_instance', None):
+        print "  %-20s %s" % ('cmk_instance', att['tag_instance'])
     print "  %-20s %s" % ('folder',       result['path'])
 
 #########################################################################
