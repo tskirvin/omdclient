@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.7
+Version:        1.1.8
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -62,6 +62,10 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Tue Sep 12 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.8-0
+- omd-host-crud - read functions only print relevant fields
+- listHostsFiltered() function - print hosts where the site matches
+
 * Tue Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.7-0
 - omd-nagios-report - now deals with UTF-8 better
 
