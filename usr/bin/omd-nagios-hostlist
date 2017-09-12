@@ -34,12 +34,17 @@ def main():
     p = omdclient.generateParser(text, usage_text, config)
     p.add_option('--verbose', dest='verbose', action="store_true",
         default=False, help='print more status information')
+    p.add_option('--filter-site', dest='filter_site',
+        default=False, help='Filter result by monitored site. Default: disabled')
     opt, args = p.parse_args()
 
     argdict = omdclient.parserArgDict(opt)
 
     try:
-        hosts = omdclient.listHosts(argdict)
+        if opt.filter_site:
+            hosts = omdclient.listHostsFiltered(opt.filter_site, argdict)
+        else:
+            hosts = omdclient.listHosts(argdict)
         h = []
         for i in hosts[1]:
             if i: h.append(i)
@@ -85,6 +90,10 @@ If set, print debugging information.
 =item B<--help>
 
 Print this information and exit.
+
+=item B<--filter-site>
+
+Filter host by site monitored. Default: disabled
 
 =back
 
