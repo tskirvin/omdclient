@@ -314,6 +314,19 @@ def listHosts(arghash):
     response = loadUrl(url, '')
     return processUrlResponse(response, arghash['debug'])
 
+def listHostsFiltered(filter, arghash):
+    """
+    List all hosts filtered by site.
+    """
+    url = generateUrl('get_all_hosts', arghash)
+    response = loadUrl(url, '')
+    status, response = processUrlResponse(response, arghash['debug'])
+    response_filtered = dict(response)
+    for h in response:
+        if response[h].get('attributes',{}).get('site','') != filter:
+            del response_filtered[h]
+    return status, response_filtered
+
 def deleteHost(host, arghash):
     """
     Remove a host from check_mk.
@@ -400,11 +413,11 @@ def generateNagiosUrl (action, args):
         if 'start' in args.keys(): start = args['start']
         else:                      start = datetime.datetime.now()
         if 'end' in args.keys():   end   = args['end']
-        else:             
+        else:
             end = start + datetime.timedelta(hours=int(args['hours']))
 
         url_parts['_down_custom']    = 'Custom+time_range'
-        url_parts['_down_from_date'] = start.date() 
+        url_parts['_down_from_date'] = start.date()
         url_parts['_down_from_time'] = start.strftime('%H:%M')
         url_parts['_down_to_date']   = end.date()
         url_parts['_down_to_time']   = end.strftime('%H:%M')
@@ -419,7 +432,7 @@ def generateNagiosUrl (action, args):
             url_parts['view_name'] = 'service'
         else:
             raise Exception('invalid downtime type: %s' % args['type'])
-        
+
     elif action == 'ack':
         url_parts['_transid'] = '-1'
         url_parts['_do_confirm'] = 'yes'
