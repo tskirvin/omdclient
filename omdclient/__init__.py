@@ -40,7 +40,7 @@ def loadCfg(config_file):
 
 def generateParser (text, usage_text, config):
     """
-    Generate an OptionParser object for use across all scripts.  We want 
+    Generate an OptionParser object for use across all scripts.  We want
     something consistent so we can use the same server/site/user options
     globally.
     """
@@ -80,7 +80,7 @@ def parserArgDict(opthash):
 
 def generateUrl (action, args):
     """
-    Generate the URL used to interact with the server.  
+    Generate the URL used to interact with the server.
        action   What action are we taking?  Valid options:
 
            activate_changes
@@ -102,8 +102,8 @@ def generateUrl (action, args):
            effective_attributes      For 'get_host'
            foreign_ok                For 'activate_changes'
            create_folders            For 'add_host'
-               
-    If 'debug' is set, we'll print the URL to stdout (with the password 
+
+    If 'debug' is set, we'll print the URL to stdout (with the password
     blanked out).
     """
     baseurl = 'https://%s/%s/check_mk/webapi.py?_username=%s' % \
@@ -268,7 +268,7 @@ def readHost(host, arghash):
 
 def updateHost(host, arghash):
     """
-    Update information from a host.  If the host does not already exist, 
+    Update information from a host.  If the host does not already exist,
     we'll call createHost instead.
     """
 
@@ -298,7 +298,7 @@ def updateHost(host, arghash):
     request['attributes'] = attributes
 
     if 'unset' in arghash:
-        attributes['unset_attributes'] = arghash['unset']
+        request['unset_attributes'] = [ arghash['unset'] ]
 
     request_string = "request=%s" % json.dumps(request)
     if arghash['debug']: print request_string
@@ -351,14 +351,14 @@ def discoverServicesHost(host, arghash):
 
 def generateNagiosUrl (action, args):
     """
-    Generate the URL used to interact with the server.  
+    Generate the URL used to interact with the server.
        action   What action are we taking?  Valid options:
 
            ack
            downtime
            hostreport
            svcreport
-           
+
        args     Argument dict.  You must have at least these keys:
 
            apikey
@@ -372,21 +372,21 @@ def generateNagiosUrl (action, args):
             ack     Associated with hostreport and svcreport; if set,
                     we will only load acknowledged (1) or unacknowledged
                     (0) alerts.
-            end     Associated with 'downtime': a datetime object 
+            end     Associated with 'downtime': a datetime object
                     indicating the end of the work.  If not offered,
                     we'll use start + 'hours' hours.
             hours   Associated with 'downtime'; indicates a number of
-                    hours of downtime.  Used if we don't have a set 
+                    hours of downtime.  Used if we don't have a set
                     'end' time.
             host    Associated with 'downtime' and 'ack': hostname.
             service Associated with 'downtime' and 'ack': service name.
             start   Associated with 'downtime'; a datetime object
                     indicating the start of the work.  If not offered,
                     we'll just use 'now()'.
-            type    Associated with 'ack' or 'downtime'; must be one of 
+            type    Associated with 'ack' or 'downtime'; must be one of
                     'host' or 'service'.
 
-    If 'debug' is set, we'll print the URL to stdout (with the password 
+    If 'debug' is set, we'll print the URL to stdout (with the password
     blanked out).
     """
     baseurl = 'https://%s/%s/check_mk/view.py' % (args['server'], args['site'])
@@ -545,4 +545,3 @@ def processNagiosReport(response, debug):
 
     headers = jsonresult.pop(0)
     return jsonresult
-

@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.1.8
+Version:        1.2.0
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -62,6 +62,12 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Fri Sep 15 2017   Tim Skirvin <tskirvin@fnal.gov>     1.2.0-0
+- omd-host-crud - now prints all listed system tags
+- omd-host-tag - new script, set or unset tags for a given host
+- updateHost()'s unset_attributes bit should actually work now (tested as
+  part of omd-host-tag)
+
 * Tue Sep 12 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.8-0
 - omd-host-crud - read functions only print relevant fields
 - listHostsFiltered() function - print hosts where the site matches

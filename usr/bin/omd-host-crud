@@ -7,7 +7,7 @@ Created/Read/Update/Delete interface to the OMD WATO API.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, sys
+import omdclient, optparse, re, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -41,11 +41,15 @@ def printReport(result, opt):
     print result['hostname']
     if att.get('alias', None):
         print "  %-20s %s" % ('alias', att['alias'])
-    if att.get('tag_role', None):
-        print "  %-20s %s" % ('cmk_role',     att['tag_role'])
-    if att.get('tag_instance', None):
-        print "  %-20s %s" % ('cmk_instance', att['tag_instance'])
     print "  %-20s %s" % ('folder',       result['path'])
+    print "  tags"
+    for i in sorted(att):
+        m = re.search('tag_(.*)', i)
+        if m:
+            tag = m.group(1)
+            if tag is not None:
+                if i in att:
+                    print "    %-40s %s" % (tag, att.get(i))
 
 #########################################################################
 ### main () #############################################################
@@ -90,7 +94,7 @@ def main():
     host    = args[1]
 
     try:
-        
+
         if   request == 'create':
             value, result = omdclient.createHost(host, argdict)
             if value == False:
@@ -184,9 +188,9 @@ omd-host-crud - create/read/update/delete omd host entries
 
 B<omd-host-crud> create cms-foo --role unconfigured
 
-B<omd-host-crud> inventory cms-foo 
+B<omd-host-crud> inventory cms-foo
 
-B<omd-host-crud> read cms-foo 
+B<omd-host-crud> read cms-foo
 
 B<omd-host-crud> update cms-foo --instance dev
 
@@ -195,13 +199,13 @@ B<omd-host-crud> delete cms-foo
 =head1 USAGE
 
 omd-host-crud provides a CRUD (Create/Read/Update/Delete) interface
-to the OMD/WATO check_mk web interface.  
+to the OMD/WATO check_mk web interface.
 
 =head1 ARGUMENTS
 
 =head2 REQUIRED
 
-=over 4 
+=over 4
 
 =item I<action>
 
@@ -215,7 +219,7 @@ Hostname for which to query.  No default, must be set.
 
 =head2 DEFAULT
 
-=over 4 
+=over 4
 
 =item B<--debug>
 
@@ -289,7 +293,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2015, Fermi National Accelerator Laboratory
+Copyright 2015-2017, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.
