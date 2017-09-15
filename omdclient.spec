@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
 Version:        1.2.0
-Release:        0%{?dist}
+Release:        1%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Fri Sep 15 2017   Tim Skirvin <tskirvin@fnal.gov>     1.2.0-1
+- omd-host-tag - eliminating an extra print statement
+
 * Fri Sep 15 2017   Tim Skirvin <tskirvin@fnal.gov>     1.2.0-0
 - omd-host-crud - now prints all listed system tags
 - omd-host-tag - new script, set or unset tags for a given host

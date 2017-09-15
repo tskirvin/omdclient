@@ -50,7 +50,6 @@ def main():
     else:                argdict['extra'] = "tag_%s=%s" % (tag, value)
 
     value, result = omdclient.updateHost(host, argdict)
-    print value
     if value == False:
         if result == None: print "%s - unknown error" % host
         else:              print "error on update: %s" % result
