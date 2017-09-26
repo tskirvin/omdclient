@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
 Version:        1.2.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -10,7 +10,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
 Requires:       rsync shyaml moreutils python-beautifulsoup4 python-requests
-BuildRequires:  rsync
+BuildRequires:  rsync python
 
 Source:         omdclient-%{version}-%{release}.tar.gz
 
@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Tue Sep 26 2017   Tim Skirvin <tskirvin@fnal.gov>     1.2.0-2
+- adding RHEL7/SL7 support
+
 * Fri Sep 15 2017   Tim Skirvin <tskirvin@fnal.gov>     1.2.0-1
 - omd-host-tag - eliminating an extra print statement
 
@@ -75,10 +78,10 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 - omd-host-crud - read functions only print relevant fields
 - listHostsFiltered() function - print hosts where the site matches
 
-* Tue Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.7-0
+* Fri Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.7-0
 - omd-nagios-report - now deals with UTF-8 better
 
-* Tue Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.6-0
+* Fri Mar 24 2017   Tim Skirvin <tskirvin@fnal.gov>     1.1.6-0
 - omd-nagios-hostlist
 - some additional changes from epleterte involving IP addresses
 
