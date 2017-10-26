@@ -70,3 +70,14 @@ add these, you generally have to:
     as above but with the column `Service Comments`.
 
 (Thanks to Christian Bryn - https://github.com/epleterte - for the docs!)
+
+## How To Build
+
+There is a `Makefile.bak` and a `*.spec` file that mirrors my local build 
+process for RPMs, if this matches your requirements; just run 
+`make -f Makefile.bak build-nomock`. 
+
+Otherwise, you may want to just follow the general instructions in `*.spec`.  
+Scripts from `usr/bin/*` go into your path; create `/etc/omdclient/config.yaml`
+as described above; make man pages with `pod2man` if you're ambitious; and run
+`python setup.py install` to install the python library.
