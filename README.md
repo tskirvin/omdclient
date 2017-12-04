@@ -65,6 +65,7 @@ add these, you generally have to:
 1.  Edit view `hostproblems` - it's a default view, so you'll go to 'clone'.
     * Change the name from `hostproblems` to `hostproblems_expanded`.
     * Scroll down to the list of columns, and add one more: `Host Comments`.
+    * (newer versions) set to 'public' and 'hidden'.
     * Save.
 2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same 
     as above but with the column `Service Comments`.

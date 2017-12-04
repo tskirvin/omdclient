@@ -185,7 +185,7 @@ def processUrlResponse(response, debug):
         jsonresult=json.loads(data)
         if debug: pprint(jsonresult)
     except ValueError:
-        soup=BeautifulSoup(data)
+        soup=BeautifulSoup(data, 'lxml')
         div1=soup.find('div', attrs={'class':'error'})
         if div1 != None:
             print "Error returned"
@@ -530,7 +530,7 @@ def processNagiosReport(response, debug):
         lines = data.split('\n')
         if re.match('^MESSAGE: .*$', lines[0]):
             return lines[0]
-        soup=BeautifulSoup(data)
+        soup=BeautifulSoup(data, 'lxml')
         div1=soup.find('div', attrs={'class':'error'})
         if div1 != None:
             print "Error returned"
