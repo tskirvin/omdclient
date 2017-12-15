@@ -9,7 +9,7 @@ REL  =  $(shell egrep ^Release *.spec | cut -d':' -f2 | tr -d ' ' | sed s/\%\{\?
 VERS =  $(shell egrep ^Version *.spec | cut -d':' -f2 | tr -d ' ')
 
 ## What files to track?  Will decide whether we need to re-build the .tar
-FILES =  Makefile.local
+FILES =  Makefile.local Makefile.deb debian/
 
 ## Include local configuration
 -include Makefile.local
@@ -21,7 +21,7 @@ FILES =  Makefile.local
 tar: $(FILES) $(FILES_LOCAL)
 	tar --exclude '.git' --exclude '*.tar*' --exclude '*.sw*' \
 		--exclude '.gitignore' $(TAR_EXCLUDE) \
-		-czpf $(PACKAGE)-$(VERS)-$(REL).tar.gz $(FILES_LOCAL)
+		-czpf $(PACKAGE)-$(VERS)-$(REL).tar.gz $(FILES) $(FILES_LOCAL)
 
 install:
 	@mkdir -p /usr/local/man/man1
@@ -31,3 +31,5 @@ install:
 	done
 	python setup.py install
 
+build: tar
+	debuild -b -uc -us

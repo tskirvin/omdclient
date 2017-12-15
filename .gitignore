@@ -1,5 +1,10 @@
+build/
+debian/debhelper-build-stamp
+debian/files
+debian/omdclient/
+debian/omdclient.substvars
+ed/
 etc/omdclient/*.yaml
+Makefile
 omdclient/*.pyc
 omdclient/*.pyo
-ed/
-Makefile
