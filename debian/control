@@ -3,10 +3,10 @@ Maintainer: Tim Skirvin <tskirvin@killfile.org>
 Section: misc
 Priority: optional
 Standards-Version: 3.9.2
-Build-Depends: debhelper (>= 9), python
+Build-Depends: debhelper (>= 9), python, perl
 
 Package: omdclient
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, python
 Description: omd client tools for check_mk
  Tools to interact with a check_mk/OMD interface.
