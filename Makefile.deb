@@ -18,18 +18,25 @@ FILES =  Makefile.local Makefile.deb debian/
 ### main () #############################################################
 #########################################################################
 
-tar: $(FILES) $(FILES_LOCAL)
+tar: $(FILES) $(FILES_LOCAL) man
 	tar --exclude '.git' --exclude '*.tar*' --exclude '*.sw*' \
 		--exclude '.gitignore' $(TAR_EXCLUDE) \
 		-czpf $(PACKAGE)-$(VERS)-$(REL).tar.gz $(FILES) $(FILES_LOCAL)
 
+
 install:
 	@mkdir -p /usr/local/man/man1
-	for i in `ls usr/bin`; do \
-		cp usr/bin/$$i /usr/local/bin && chmod 0755 /usr/local/bin/$$i; \
-		pod2man /usr/local/bin/$$i > /usr/local/man/man1/$$i.1; \
-	done
 	python setup.py install
+	for i in `ls usr/bin`; do \
+		pod2man usr/bin/$$i > /usr/local/man/man1/$$i.1; \
+	done
 
-build: tar
+man:
+	@mkdir -p man/man1
+	@rm -rf man/man1/*
+	@for i in `ls usr/bin`; do \
+	    pod2man usr/bin/$$i > man/man1/$$i.1; \
+	done
+
+build: tar man
 	debuild -b -uc -us
