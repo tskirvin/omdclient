@@ -82,3 +82,9 @@ Otherwise, you may want to just follow the general instructions in `*.spec`.
 Scripts from `usr/bin/*` go into your path; create `/etc/omdclient/config.yaml`
 as described above; make man pages with `pod2man` if you're ambitious; and run
 `python setup.py install` to install the python library.
+
+### Debian
+
+    make -f Makefile.deb build
+
+That should build a full .deb package.
