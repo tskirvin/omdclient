@@ -112,6 +112,7 @@ def generateUrl (action, args):
 
     if action == 'activate_changes':
         url_parts.append('action=activate_changes')
+        url_parts.append('mode=dirty')
         if 'foreign_ok' in args.keys():
             if args['foreign_ok']: url_parts.append('allow_foreign_changes=1')
 

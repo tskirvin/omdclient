@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.2.0
-Release:        2%{?dist}
+Version:        1.3.0
+Release:        1%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Mon Apr 16 2018   Tim Skirvin <tskirvin@fnal.gov>     1.3.0-1
+- omd-nagios-activate - adding 'mode=dirty' to the URL
+
 * Tue Sep 26 2017   Tim Skirvin <tskirvin@fnal.gov>     1.2.0-2
 - adding RHEL7/SL7 support
 
