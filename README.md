@@ -69,4 +69,8 @@ add these, you generally have to:
 2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same 
     as above but with the column `Service Comments`.
 
+In newer versions of check\_mk, you may also need to make these views
+Public (check `Visibility` / `Make this view available for other users` /
+`Publish to all users`).
+
 (Thanks to Christian Bryn - https://github.com/epleterte - for the docs!)
