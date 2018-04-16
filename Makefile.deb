@@ -1,0 +1,42 @@
+#########################################################################
+### Central Configuration - EDIT AT YOUR OWN RISK #######################
+#########################################################################
+
+PACKAGE = $(shell egrep '^Name' *spec | cut -d':' -f2 | tr -d ' ')
+
+## Package version string
+REL  =  $(shell egrep ^Release *.spec | cut -d':' -f2 | tr -d ' ' | sed s/\%\{\?dist\}/.el${RHL}/)
+VERS =  $(shell egrep ^Version *.spec | cut -d':' -f2 | tr -d ' ')
+
+## What files to track?  Will decide whether we need to re-build the .tar
+FILES =  Makefile.local Makefile.deb debian/
+
+## Include local configuration
+-include Makefile.local
+
+#########################################################################
+### main () #############################################################
+#########################################################################
+
+tar: $(FILES) $(FILES_LOCAL) man
+	tar --exclude '.git' --exclude '*.tar*' --exclude '*.sw*' \
+		--exclude '.gitignore' $(TAR_EXCLUDE) \
+		-czpf $(PACKAGE)-$(VERS)-$(REL).tar.gz $(FILES) $(FILES_LOCAL)
+
+
+install:
+	@mkdir -p /usr/local/man/man1
+	python setup.py install
+	for i in `ls usr/bin`; do \
+		pod2man usr/bin/$$i > /usr/local/man/man1/$$i.1; \
+	done
+
+man:
+	@mkdir -p man/man1
+	@rm -rf man/man1/*
+	@for i in `ls usr/bin`; do \
+	    pod2man usr/bin/$$i > man/man1/$$i.1; \
+	done
+
+build: tar man
+	debuild -b -uc -us

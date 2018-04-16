@@ -65,6 +65,7 @@ add these, you generally have to:
 1.  Edit view `hostproblems` - it's a default view, so you'll go to 'clone'.
     * Change the name from `hostproblems` to `hostproblems_expanded`.
     * Scroll down to the list of columns, and add one more: `Host Comments`.
+    * (newer versions) set to 'public' and 'hidden'.
     * Save.
 2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same 
     as above but with the column `Service Comments`.
@@ -74,3 +75,20 @@ Public (check `Visibility` / `Make this view available for other users` /
 `Publish to all users`).
 
 (Thanks to Christian Bryn - https://github.com/epleterte - for the docs!)
+
+## How To Build
+
+There is a `Makefile.bak` and a `*.spec` file that mirrors my local build 
+process for RPMs, if this matches your requirements; just run 
+`make -f Makefile.bak build-nomock`. 
+
+Otherwise, you may want to just follow the general instructions in `*.spec`.  
+Scripts from `usr/bin/*` go into your path; create `/etc/omdclient/config.yaml`
+as described above; make man pages with `pod2man` if you're ambitious; and run
+`python setup.py install` to install the python library.
+
+### Debian
+
+    make -f Makefile.deb build
+
+That should build a full .deb package.
