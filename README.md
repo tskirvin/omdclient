@@ -72,7 +72,20 @@ add these, you generally have to:
 
 In newer versions of check\_mk, you may also need to make these views
 Public (check `Visibility` / `Make this view available for other users` /
-`Publish to all users`).
+`Publish to all users`).  Also, the `hostproblems` base view may have
+changed: I have for `hostproblems_expanded`:
+
+1. Hostname
+2. Host icons
+3. Host state
+4. Output of host check plugin
+5. Number of services in state OK
+6. Number of services in state WARN
+7. Number of services in state UNKNOWN
+8. Number of services in state CRIT
+9. Number of services in state PENDING
+10. The age of the current host state
+11. Host comments
 
 (Thanks to Christian Bryn - https://github.com/epleterte - for the docs!)
 
