@@ -7,14 +7,14 @@ Created/Read/Update/Delete interface to the OMD WATO API.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, re, sys
+import omdclient, optparse, os, re, sys
 
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
 
 ## Central configuration file.
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Default values for role/instance/extra for create/update.
 role     = 'UNSET'
@@ -56,6 +56,7 @@ def printReport(result, opt):
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:

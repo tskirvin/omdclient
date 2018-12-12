@@ -7,14 +7,14 @@ Update a given tag for a given host using the OMD WATO API.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, re, sys
+import omdclient, optparse, os, re, sys
 
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
 
 ## Central configuration file.
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "update a given host tag in OMD, using the WATO API"
@@ -25,6 +25,7 @@ usage_text = "usage: %prog HOSTNAME TAG VALUE"
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:

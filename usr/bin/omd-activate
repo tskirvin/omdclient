@@ -5,14 +5,14 @@
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, sys
+import omdclient, optparse, os, sys
 
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
 ## Managed via central libraries and /etc/omd_client
 
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "Activate changes in check_mk/WATO interface"
@@ -23,6 +23,7 @@ usage_text = "usage: %prog [options]"
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:

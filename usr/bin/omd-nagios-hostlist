@@ -7,14 +7,14 @@ List all hosts in Nagios.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, re, sys
+import omdclient, optparse, re, os, sys
 
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
 
 ## Central configuration file.
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "List all hosts in Nagios, using the WATO API"
@@ -25,6 +25,7 @@ usage_text = "usage: %prog PROBLEM [options]"
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:

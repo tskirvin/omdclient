@@ -24,7 +24,7 @@ Activates changes made by the API user.
 Provides a linkage between a puppet External Node Classifier (ENC) and a
 monitoring instance.  In essence, we want to add hosts to monitoring when
 a host is added to puppet; remove the host from monitoring when the host
-is removed from puppet; and re-tag the host when its role changes.  
+is removed from puppet; and re-tag the host when its role changes.
 
 https://docs.puppetlabs.com/guides/external_nodes.html
 
@@ -42,7 +42,7 @@ Schedules host/service downtimes from the command-line.
 
 ### omd-nagios-report
 
-Prints a human-readable report on current host and service alerts. 
+Prints a human-readable report on current host and service alerts.
 
 ## How To Use
 
@@ -55,6 +55,10 @@ You'll have to populate this file on your own:
     user: 'xxxx-api'
     apikey: 'xxxxxx'
 
+If you set the 'OMDCONFIG' environment variable you can point at different
+configs, e.g.:
+
+    OMDCONFIG=/tmp/myconfig.yaml omd-activate
 
 ### Configuration of 'expanded views'
 
@@ -67,7 +71,7 @@ add these, you generally have to:
     * Scroll down to the list of columns, and add one more: `Host Comments`.
     * (newer versions) set to 'public' and 'hidden'.
     * Save.
-2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same 
+2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same
     as above but with the column `Service Comments`.
 
 In newer versions of check\_mk, you may also need to make these views
@@ -91,11 +95,11 @@ changed: I have for `hostproblems_expanded`:
 
 ## How To Build
 
-There is a `Makefile.bak` and a `*.spec` file that mirrors my local build 
-process for RPMs, if this matches your requirements; just run 
-`make -f Makefile.bak build-nomock`. 
+There is a `Makefile.bak` and a `*.spec` file that mirrors my local build
+process for RPMs, if this matches your requirements; just run
+`make -f Makefile.bak build-nomock`.
 
-Otherwise, you may want to just follow the general instructions in `*.spec`.  
+Otherwise, you may want to just follow the general instructions in `*.spec`.
 Scripts from `usr/bin/*` go into your path; create `/etc/omdclient/config.yaml`
 as described above; make man pages with `pod2man` if you're ambitious; and run
 `python setup.py install` to install the python library.

@@ -7,14 +7,14 @@ Find hosts in Nagios that have a given problem.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, re, sys
+import omdclient, optparse, os, re, sys
 
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
 
 ## Central configuration file.
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "Discover hosts with a given service problem, using the WATO API"
@@ -49,6 +49,7 @@ def printServiceStatusIfMatch(entry, opt):
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:

@@ -5,14 +5,14 @@
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, omdclient, optparse, sys
+import datetime, omdclient, optparse, os, sys
 
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
 ## Managed via central libraries and /etc/omd_client
 
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "schedule host/service downtimes via OMD"
@@ -23,6 +23,7 @@ usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:

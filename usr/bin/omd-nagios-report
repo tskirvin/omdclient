@@ -5,7 +5,7 @@
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, re, socket, sys
+import omdclient, optparse, re, os, socket, sys
 from datetime import datetime
 
 #########################################################################
@@ -13,7 +13,7 @@ from datetime import datetime
 #########################################################################
 ## Managed via central libraries and /etc/omd_client
 
-config_file = '/etc/omdclient/config.yaml'
+config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
 text = "print a pretty host/service report to STDOUT"
@@ -53,6 +53,7 @@ def printSvcReport(array):
 #########################################################################
 
 def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
     except Exception, e:
