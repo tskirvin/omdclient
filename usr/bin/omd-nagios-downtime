@@ -140,6 +140,10 @@ If set, print debugging information.
 
 Password for the API User.  Default: comes from the configuration file.
 
+=item B<--remove>
+
+If set, remove an existing downtime instead of creating a new one.
+
 =item B<--server> I<server>
 
 Host name of the server.  Default: comes from the configuration file.
