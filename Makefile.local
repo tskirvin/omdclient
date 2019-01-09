@@ -31,6 +31,7 @@ TAR_EXCLUDE = --exclude *.pyc --exclude *.pyo
 
 all:            rpm-6-nosign sign-slf6 rpm-7-nosign sign-slf7
 confirm:        confirm-slf6 confirm-slf7
+deploy:			deploy-6 deploy-7
 copy:           copy-slf6 copy-slf7
 rpm-sign:       sign-slf6 sign-slf7
 test:           rpm-6-nosign

@@ -1,0 +1,190 @@
+#!/usr/bin/env python
+"""
+Bulk import hosts into OMD from STDIN.
+"""
+
+#########################################################################
+### Declarations ########################################################
+#########################################################################
+
+import omdclient, optparse, os, pprint, re, socket, sys
+
+#########################################################################
+### Configuration #######################################################
+#########################################################################
+
+## Central configuration file.
+config_file_base = '/etc/omdclient/config.yaml'
+
+## Default values for role/instance/extra for create/update.
+folder   = 'UNSET'
+
+## Text for --help
+text = "Bulk host import for OMD, using the WATO API"
+usage_text = "usage: %prog [options] < HOSTLIST"
+
+#########################################################################
+### Subroutines #########################################################
+#########################################################################
+
+#########################################################################
+### main () #############################################################
+#########################################################################
+
+def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
+    try:
+        config = omdclient.loadCfg (config_file)
+    except Exception, e:
+        print "failed to load config: %s" % (e)
+        sys.exit(3)
+
+    p = omdclient.generateParser(text, usage_text, config)
+    group = optparse.OptionGroup(p, 'create/update options')
+    group.add_option('--no_check_dns', dest='check_dns', default=True,
+        action='store_false', 
+        help='check DNS before adding hosts? (default: %default)')
+    group.add_option('--noop', dest='noop', default=False, action='store_true',
+        help='take no actions (default: %default)')
+    p.add_option_group(group)
+    opt, args = p.parse_args()
+
+    argdict = omdclient.parserArgDict(opt)
+
+    if len(args) != 1:
+        p.print_help()
+        sys.exit(1)
+
+    folder = args[0]
+
+    hosts = []
+    for line in sys.stdin:
+        host = line.rstrip()
+        try:
+            if socket.gethostbyname(host):
+               hosts.append(host)
+            else:
+               print "host %s does not exist in DNS, skipping" % host
+               if not opt.check_dns: hosts.append(host)
+        except socket.gaierror, e:
+            print "error looking up host %s: %s" % (host, e)
+            if not opt.check_dns: hosts.append(host)
+        except Exception, e:
+            print "error looking up host %s: %s" % (host, e)
+            if not opt.check_dns: hosts.append(host)
+
+    ret, omdhostlist = omdclient.listHosts(argdict)
+    for host in hosts:
+        if host in omdhostlist:
+            h = omdhostlist[host]
+            if 'path' in h and h['path'] == folder:
+                if opt.debug:
+                    print "%s: already in folder %s, skipping" % (host, folder)
+                pass
+
+            elif 'path' in h:
+                if opt.noop:
+                    print "%s: was in folder %s, would delete/re-add to %s (noop)" % (host, h['path'], folder)
+                else:
+                    print "%s: was in folder %s, delete/re-add to %s" % (host, h['path'], folder)
+                    new = argdict
+                    new['folder'] = folder
+
+                    omdclient.deleteHost(host, argdict)
+                    omdclient.createHost(host, new)
+
+        else:
+            if opt.noop:
+                print "%s: would add to folder %s (noop)" % (host, folder)
+            else:
+                print "%s: adding to folder %s" % (host, folder)
+                new = argdict
+                new['folder'] = folder
+                omdclient.createHost(host, new)
+
+if __name__ == "__main__":
+    main()
+
+#########################################################################
+### POD Documentation ###################################################
+#########################################################################
+
+"""
+
+=head1 NAME
+
+omd-bulkimport - import hosts into a given folder
+
+=head1 SYNOPSIS
+
+B<omd-bulkimport> --folder FOLDER < HOST_LIST
+
+=head1 USAGE
+
+[...]
+
+=head1 ARGUMENTS
+
+=head2 DEFAULT
+
+=over 4
+
+=item B<--debug>
+
+If set, print debugging information.
+
+=item B<--help>
+
+Print this information and exit.
+
+=back
+
+=head2 CONNECTION OPTIONS
+
+=over 4
+
+=item B<--apikey> I<key>
+
+Password for the API User.  Default: comes from the configuration file.
+
+=item B<--server> I<server>
+
+Host name of the server.  Default: comes from the configuration file.
+
+=item B<--site> I<site>
+
+Site name within the server.  Default: comes from the configuration file.
+
+=item B<--user> I<user>
+
+API User name.  The user must exist on the server, and be an 'automation
+user'.  Default: comes from the configuration file.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/omdclient/config.yaml>
+
+=back
+
+=head1 SEE ALSO
+
+https://mathias-kettner.de/checkmk_wato_webapi.html
+
+=head1 AUTHOR
+
+Tim Skirvin <tskirvin@fnal.gov>
+
+=head1 LICENSE + COPYRIGHT
+
+Copyright 2019, Fermi National Accelerator Laboratory
+
+This program is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+"""
