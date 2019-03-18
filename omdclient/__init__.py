@@ -56,6 +56,8 @@ def generateParser (text, usage_text, config):
         help='user name (default: %default)')
     group.add_option('--apikey', dest='apikey', default=config['apikey'],
         help='api key (not printing the default)')
+    group.add_option('--remove', action="store_true", dest='remove', default=False,
+        help='removes a downtime')
     p.add_option_group(group)
     return p
 
@@ -70,7 +72,8 @@ def parserArgDict(opthash):
         'debug':  opthash.debug,
         'server': opthash.server,
         'site':   opthash.site,
-        'user':   opthash.user
+        'user':   opthash.user,
+        'remove': opthash.remove
     }
     return args
 
@@ -411,18 +414,22 @@ def generateNagiosUrl (action, args):
         url_parts['_do_confirm'] = 'yes'
         url_parts['_do_actions'] = 'yes'
 
-        if 'start' in args.keys(): start = args['start']
-        else:                      start = datetime.datetime.now()
-        if 'end' in args.keys():   end   = args['end']
+        if args['remove']:
+            url_parts['_remove_downtimes'] = 'Remove'
+            url_parts['_down_remove'] = 'Remove'
         else:
-            end = start + datetime.timedelta(hours=int(args['hours']))
+            if 'start' in args.keys(): start = args['start']
+            else:                      start = datetime.datetime.now()
+            if 'end' in args.keys():   end   = args['end']
+            else:
+                end = start + datetime.timedelta(hours=int(args['hours']))
 
-        url_parts['_down_custom']    = 'Custom+time_range'
-        url_parts['_down_from_date'] = start.date()
-        url_parts['_down_from_time'] = start.strftime('%H:%M')
-        url_parts['_down_to_date']   = end.date()
-        url_parts['_down_to_time']   = end.strftime('%H:%M')
-        url_parts['_down_comment']   = args['comment']
+            url_parts['_down_custom']    = 'Custom+time_range'
+            url_parts['_down_from_date'] = start.date()
+            url_parts['_down_from_time'] = start.strftime('%H:%M')
+            url_parts['_down_to_date']   = end.date()
+            url_parts['_down_to_time']   = end.strftime('%H:%M')
+            url_parts['_down_comment']   = args['comment']
 
         if args['type'] == 'host':
             url_parts['host']      = args['host']
