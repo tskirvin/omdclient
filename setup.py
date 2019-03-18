@@ -12,7 +12,7 @@ man     = glob.glob(os.path.join('man/man1/*'))
 
 setup (
   name             = 'omdclient',
-  version          = '1.0.0',
+  version          = '1.3.3-1',
   description      = 'omdclient check_mk + WATO/OMD interface',
   maintainer       = 'Tim Skirvin',
   maintainer_email = 'tskirvin@fnal.gov',
