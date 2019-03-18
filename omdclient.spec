@@ -62,6 +62,9 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 /etc/omdclient/*
 
 %changelog
+* Wed Jan 09 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.3-4
+- tweaks support uploading to pypi.org
+
 * Wed Jan 09 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.3-1
 - omd-bulkimport - new script, does what it says on the tin
 

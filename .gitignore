@@ -8,3 +8,4 @@ etc/omdclient/*.yaml
 Makefile
 omdclient/*.pyc
 omdclient/*.pyo
+*egg-info
