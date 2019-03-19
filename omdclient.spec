@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.3.3
-Release:        1%{?dist}
+Version:        1.3.5
+Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -10,12 +10,12 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
 Requires:       rsync shyaml moreutils python-beautifulsoup4 python-requests
-BuildRequires:  rsync python
+BuildRequires:  rsync python python-setuptools
 
 Source:         omdclient-%{version}-%{release}.tar.gz
 
 %description
-Tools to interact with the OMD/WATO API for check_mk, and to tie them 
+Tools to interact with the OMD/WATO API for check_mk, and to tie them
 into puppet.
 
 %prep
@@ -35,7 +35,7 @@ done
 
 for i in bin sbin; do
     if [ -d ${RPM_BUILD_ROOT}/$i ]; then
-        chmod 0755 ${RPM_BUILD_ROOT}
+        chmod 0755 ${RPM_BUILD_ROOT}/${i}
     fi
 done
 
@@ -45,11 +45,11 @@ for i in `ls usr/bin`; do
         > ${RPM_BUILD_ROOT}/usr/share/man/man1/${i}.1 ;
 done
 
-python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
+python setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
+    --single-version-externally-managed --record=installed_files
 
 %clean
-# Adding empty clean section per rpmlint.  In this particular case, there is 
-# nothing to clean up as there is no build process
+# Adding empty clean section per rpmlint.
 
 %files
 %defattr(-,root,root)
@@ -58,11 +58,18 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr
 %{_bindir}/omd-*
 /usr/share/man/man1/*
 /usr/libexec/omdclient/git-hooks/*
-/usr/lib*/python*/site-packages/*
+/usr/lib*/python*/site-packages/omdclient*
 /etc/omdclient/*
 
 %changelog
-* Wed Jan 09 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.3-4
+* Tue Mar 19 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.5-0
+- moving the changelog to CHANGELOG.md going forwards
+- generally re-working for distribution via pypi
+
+* Mon Mar 18 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.4-0
+- merging in previous 'mgusek' code
+
+* Mon Mar 18 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.3-4
 - tweaks support uploading to pypi.org
 
 * Wed Jan 09 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.3-1

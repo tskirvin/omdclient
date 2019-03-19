@@ -1,11 +1,19 @@
 from setuptools import setup
+import glob, re, os
 
-import os
-import glob
-
+## get documentation from README.md
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+## get version from spec file
+with open('omdclient.spec', 'r') as fh:
+    for line in fh:
+        m = re.search("^Version:\s+(.*)\s*$", line)
+        if m:
+            version=m.group(1)
+            break
+
+## get list of files to install
 pyfiles = glob.glob(os.path.join('*', '*.py'))
 pyfiles = [pyfile[:-3] for pyfile in pyfiles]
 
@@ -14,7 +22,7 @@ man     = glob.glob(os.path.join('man/man1/*'))
 
 setup (
   name             = 'omdclient',
-  version          = '1.3.3-4',
+  version          = version,
   description      = 'omdclient check_mk + WATO/OMD interface',
   long_description = long_description,
   long_description_content_type = 'text/markdown',
@@ -28,7 +36,7 @@ setup (
   data_files       = [ ( 'share/man/man1', man ) ],
   scripts          = scripts,
   py_modules       = pyfiles,
-  keywords         = ['check_mk', 'omd', 'nagios']
+  keywords         = ['check_mk', 'omd', 'nagios', 'api', 'wato']
 )
 
-# add classifiers, platforms, keywords
+# add classifiers, platforms

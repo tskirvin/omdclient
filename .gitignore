@@ -9,3 +9,5 @@ Makefile
 omdclient/*.pyc
 omdclient/*.pyo
 *egg-info
+dist/
+installed_files

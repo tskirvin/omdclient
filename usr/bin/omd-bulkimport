@@ -42,7 +42,7 @@ def main():
     p = omdclient.generateParser(text, usage_text, config)
     group = optparse.OptionGroup(p, 'create/update options')
     group.add_option('--no_check_dns', dest='check_dns', default=True,
-        action='store_false', 
+        action='store_false',
         help='check DNS before adding hosts? (default: %default)')
     group.add_option('--noop', dest='noop', default=False, action='store_true',
         help='take no actions (default: %default)')
@@ -121,9 +121,20 @@ B<omd-bulkimport> --folder FOLDER < HOST_LIST
 
 =head1 USAGE
 
-[...]
+Takes a list of hosts on STDIN and assigns all of them to the given folder
+F<FOLDER>.
 
 =head1 ARGUMENTS
+
+=over 4
+
+=item B<--no_check_dns>
+
+If set, add the hsots even without checking DNS first to see if it exists.
+
+=item B<--noop>
+
+=back
 
 =head2 DEFAULT
 
