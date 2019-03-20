@@ -8,6 +8,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+* `omdclient/__init__.py` - added some docs re: `tag_role` and
+  `tag_instance` in the documentation (in short, we use them locally to
+  tie together puppet + OMD, but they're not very interesting otherwise).
+
 ## [1.3.5] - 2019-03-19
 
 ### Added

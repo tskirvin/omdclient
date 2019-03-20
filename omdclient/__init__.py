@@ -228,6 +228,10 @@ def createHost(host, arghash):
         role
         instance
         extra
+
+    Note that `tag_role` and `tag_instance` are tags used locally to tie
+    together local local puppet instance and our OMD folders.  You don't
+    have to use them and may cheerfully ignore them.
     """
 
     request = {}
