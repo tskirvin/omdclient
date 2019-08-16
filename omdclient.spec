@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.3.5
+Version:        1.4.0
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -9,8 +9,8 @@ License:        Artistic 2.0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
-Requires:       rsync shyaml moreutils python-beautifulsoup4 python-requests
-BuildRequires:  rsync python python-setuptools
+Requires:       rsync shyaml moreutils python36-beautifulsoup4 python36-requests
+BuildRequires:  rsync python36 python36-setuptools python3-rpm-macros
 
 Source:         omdclient-%{version}-%{release}.tar.gz
 
@@ -45,7 +45,7 @@ for i in `ls usr/bin`; do
         > ${RPM_BUILD_ROOT}/usr/share/man/man1/${i}.1 ;
 done
 
-python setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
+python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
     --single-version-externally-managed --record=installed_files
 
 %clean
@@ -58,10 +58,14 @@ python setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 %{_bindir}/omd-*
 /usr/share/man/man1/*
 /usr/libexec/omdclient/git-hooks/*
-/usr/lib*/python*/site-packages/omdclient*
+%{python3_sitelib}/omdclient/*py*
+%{python3_sitelib}/*egg-info
 /etc/omdclient/*
 
 %changelog
+* Fri Aug 16 2019   Tim Skirvin <tskirvin@fnal.gov>     1.4.0-0
+- converting to python 3
+
 * Tue Mar 19 2019   Tim Skirvin <tskirvin@fnal.gov>     1.3.5-0
 - moving the changelog to CHANGELOG.md going forwards
 - generally re-working for distribution via pypi

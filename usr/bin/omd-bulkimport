@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Bulk import hosts into OMD from STDIN.
 """
@@ -35,8 +35,8 @@ def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
-    except Exception, e:
-        print "failed to load config: %s" % (e)
+    except Exception as e:
+        print("failed to load config: %s" % (e))
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
@@ -64,13 +64,13 @@ def main():
             if socket.gethostbyname(host):
                hosts.append(host)
             else:
-               print "host %s does not exist in DNS, skipping" % host
+               print("host %s does not exist in DNS, skipping" % host)
                if not opt.check_dns: hosts.append(host)
-        except socket.gaierror, e:
-            print "error looking up host %s: %s" % (host, e)
+        except socket.gaierror as e:
+            print("error looking up host %s: %s" % (host, e))
             if not opt.check_dns: hosts.append(host)
-        except Exception, e:
-            print "error looking up host %s: %s" % (host, e)
+        except Exception as e:
+            print("error looking up host %s: %s" % (host, e))
             if not opt.check_dns: hosts.append(host)
 
     ret, omdhostlist = omdclient.listHosts(argdict)
@@ -79,14 +79,14 @@ def main():
             h = omdhostlist[host]
             if 'path' in h and h['path'] == folder:
                 if opt.debug:
-                    print "%s: already in folder %s, skipping" % (host, folder)
+                    print("%s: already in folder %s, skipping" % (host, folder))
                 pass
 
             elif 'path' in h:
                 if opt.noop:
-                    print "%s: was in folder %s, would delete/re-add to %s (noop)" % (host, h['path'], folder)
+                    print("%s: was in folder %s, would delete/re-add to %s (noop)" % (host, h['path'], folder))
                 else:
-                    print "%s: was in folder %s, delete/re-add to %s" % (host, h['path'], folder)
+                    print("%s: was in folder %s, delete/re-add to %s" % (host, h['path'], folder))
                     new = argdict
                     new['folder'] = folder
 
@@ -95,9 +95,9 @@ def main():
 
         else:
             if opt.noop:
-                print "%s: would add to folder %s (noop)" % (host, folder)
+                print("%s: would add to folder %s (noop)" % (host, folder))
             else:
-                print "%s: adding to folder %s" % (host, folder)
+                print("%s: adding to folder %s" % (host, folder))
                 new = argdict
                 new['folder'] = folder
                 omdclient.createHost(host, new)

@@ -12,7 +12,9 @@ config = {}
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, json, optparse, os, re, ssl, sys, urllib, urllib2, yaml
+import datetime, json, optparse, os, re, ssl, sys, urllib.request, \
+    urllib.parse, urllib.error, urllib.request, urllib.error, \
+    urllib.parse, yaml
 from bs4 import BeautifulSoup
 from pprint import pprint
 
@@ -27,9 +29,9 @@ def loadCfg(config_file):
 
     try:
         config = yaml.load(open(config_file, 'r'))
-    except IOError, exc:
+    except IOError as exc:
         raise Exception('%s' % exc)
-    except yaml.YAMLError, exc:
+    except yaml.YAMLError as exc:
         raise Exception('yaml error: %s' % exc)
         sys.exit (3)
     except:
@@ -116,12 +118,12 @@ def generateUrl (action, args):
     if action == 'activate_changes':
         url_parts.append('action=activate_changes')
         url_parts.append('mode=dirty')
-        if 'foreign_ok' in args.keys():
+        if 'foreign_ok' in list(args.keys()):
             if args['foreign_ok']: url_parts.append('allow_foreign_changes=1')
 
     elif action == 'add_host':
         url_parts.append('action=add_host')
-        if 'create_folders' in args.keys():
+        if 'create_folders' in list(args.keys()):
             if args['create_folders']: url_parts.append('create_folders=0')
 
     elif action == 'delete_host':
@@ -132,7 +134,7 @@ def generateUrl (action, args):
 
     elif action == 'discover_services':
         url_parts.append('action=discover_services')
-        if 'tabula_rasa' in args.keys():
+        if 'tabula_rasa' in list(args.keys()):
             if args['tabula_rasa']: url_parts.append('mode=refresh')
 
     elif action == 'get_all_hosts':
@@ -140,7 +142,7 @@ def generateUrl (action, args):
 
     elif action == 'get_host':
         url_parts.append('action=get_host')
-        if 'effective_attributes' in args.keys():
+        if 'effective_attributes' in list(args.keys()):
             url_parts.append('effective_attributes=%s' \
                 % args['effective_attributes'])
 
@@ -150,7 +152,7 @@ def generateUrl (action, args):
     if args['debug']:
         url_parts_clean = url_parts
         url_parts_clean.append('_secret=...')
-        print "url: %s" % '&'.join(url_parts_clean)
+        print("url: %s" % '&'.join(url_parts_clean))
 
     url_parts.append ('_secret=%s' % args['apikey'])
 
@@ -161,15 +163,15 @@ def loadUrl (url, request_string):
     Load the URL and request string pair.  Returns a urllib2 response.
     """
     try:
-        response = urllib2.urlopen(url, request_string)
-    except urllib2.HTTPError, err:
+        response = urllib.request.urlopen(url, request_string.encode('utf-8'))
+    except urllib.error.HTTPError as err:
         if err.code == 404:
             raise Exception('Page not found')
         elif err.code == 403:
             raise Exception('Access Denied')
         else:
             raise Exception('http error, code %s' % err.code)
-    except urllib2.URLError, err:
+    except urllib.error.URLError as err:
         raise Exception('url error: %s' % err.reason)
     return response
 
@@ -192,18 +194,18 @@ def processUrlResponse(response, debug):
         soup=BeautifulSoup(data, 'lxml')
         div1=soup.find('div', attrs={'class':'error'})
         if div1 != None:
-            print "Error returned"
-            print div1.string
+            print("Error returned")
+            print(div1.string)
             return False, None
         else:
-            print "ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:"
-            print data
+            print("ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:")
+            print(data)
             return False, None
 
     if jsonresult['result_code']==0:
         return True, jsonresult['result']
     else:
-        if debug: print "result code was: %s" % jsonresult['result_code']
+        if debug: print("result code was: %s" % jsonresult['result_code'])
         return False, jsonresult['result']
 
     return False, result
@@ -259,7 +261,7 @@ def createHost(host, arghash):
     url = generateUrl ('add_host', arghash)
 
     request_string = "request=%s" % json.dumps(request)
-    if arghash['debug']: print request_string
+    if arghash['debug']: print(request_string)
 
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
@@ -309,7 +311,7 @@ def updateHost(host, arghash):
         request['unset_attributes'] = [ arghash['unset'] ]
 
     request_string = "request=%s" % json.dumps(request)
-    if arghash['debug']: print request_string
+    if arghash['debug']: print(request_string)
 
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
@@ -405,12 +407,12 @@ def generateNagiosUrl (action, args):
 
     if action == 'hostreport':
         url_parts['view_name'] = 'hostproblems_expanded'
-        if 'ack' in args.keys():
+        if 'ack' in list(args.keys()):
             url_parts['is_host_acknowledged'] = args['ack']
 
     elif action == 'svcreport':
         url_parts['view_name'] = 'svcproblems_expanded'
-        if 'ack' in args.keys():
+        if 'ack' in list(args.keys()):
             url_parts['is_service_acknowledged'] = args['ack']
 
     elif action == 'downtime':
@@ -422,9 +424,9 @@ def generateNagiosUrl (action, args):
             url_parts['_remove_downtimes'] = 'Remove'
             url_parts['_down_remove'] = 'Remove'
         else:
-            if 'start' in args.keys(): start = args['start']
+            if 'start' in list(args.keys()): start = args['start']
             else:                      start = datetime.datetime.now()
-            if 'end' in args.keys():   end   = args['end']
+            if 'end' in list(args.keys()):   end   = args['end']
             else:
                 end = start + datetime.timedelta(hours=int(args['hours']))
 
@@ -468,9 +470,9 @@ def generateNagiosUrl (action, args):
     if args['debug']:
         url_parts_clean = dict(url_parts)
         url_parts_clean['_secret'] = '...'
-        print "url: %s?%s" % (baseurl, urllib.urlencode(url_parts_clean))
+        print("url: %s?%s" % (baseurl, urllib.parse.urlencode(url_parts_clean)))
 
-    url = "%s?%s" % (baseurl, urllib.urlencode(url_parts))
+    url = "%s?%s" % (baseurl, urllib.parse.urlencode(url_parts))
     return url
 
 
@@ -545,12 +547,12 @@ def processNagiosReport(response, debug):
         soup=BeautifulSoup(data, 'lxml')
         div1=soup.find('div', attrs={'class':'error'})
         if div1 != None:
-            print "Error returned"
-            print div1.string
+            print("Error returned")
+            print(div1.string)
             return []
         else:
-            print "ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:"
-            print data
+            print("ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:")
+            print(data)
             return []
 
     if len(jsonresult) <= 1: return []

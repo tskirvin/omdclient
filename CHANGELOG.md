@@ -10,9 +10,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+## [1.4.0] - 2019-08-16
+
 * `omdclient/__init__.py` - added some docs re: `tag_role` and
   `tag_instance` in the documentation (in short, we use them locally to
   tie together puppet + OMD, but they're not very interesting otherwise).
+* converted everything to Python 3
+* dropping rpms for RHEL 6
 
 ## [1.3.5] - 2019-03-19
 

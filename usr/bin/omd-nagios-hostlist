@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 List all hosts in Nagios.
 """
@@ -28,8 +28,8 @@ def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
-    except Exception, e:
-        print "failed to load config: %s" % (e)
+    except Exception as e:
+        print("failed to load config: %s" % (e))
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
@@ -50,10 +50,10 @@ def main():
         for i in hosts[1]:
             if i: h.append(i)
         h.sort()
-        for i in h: print i
+        for i in h: print(i)
 
-    except Exception, e:
-        print "failed: %s" % (e)
+    except Exception as e:
+        print("failed: %s" % (e))
         sys.exit(-1)
 
 if __name__ == "__main__":

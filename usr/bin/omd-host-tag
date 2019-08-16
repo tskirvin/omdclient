@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Update a given tag for a given host using the OMD WATO API.
 """
@@ -28,8 +28,8 @@ def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
         config = omdclient.loadCfg (config_file)
-    except Exception, e:
-        print "failed to load config: %s" % (e)
+    except Exception as e:
+        print("failed to load config: %s" % (e))
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
@@ -52,19 +52,19 @@ def main():
 
     value, result = omdclient.updateHost(host, argdict)
     if value == False:
-        if result == None: print "%s - unknown error" % host
-        else:              print "error on update: %s" % result
+        if result == None: print("%s - unknown error" % host)
+        else:              print("error on update: %s" % result)
         sys.exit(1)
 
-    print "%s - host updated, will now inventory..." % host
+    print("%s - host updated, will now inventory..." % host)
 
     value1, result1 = omdclient.discoverServicesHost(host, argdict)
     if value1 == False:
-        if result == None: print "%s - unknown error" % host
-        else:              print "error on inventory: %s" % result
+        if result == None: print("%s - unknown error" % host)
+        else:              print("error on inventory: %s" % result)
         sys.exit(1)
     else:
-        print "%s - %s" % (host, result1)
+        print("%s - %s" % (host, result1))
         sys.exit(0)
 
 if __name__ == "__main__":
