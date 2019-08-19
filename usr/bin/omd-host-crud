@@ -17,12 +17,11 @@ import omdclient, optparse, os, re, sys
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Default values for role/instance/extra for create/update.
-role     = 'UNSET'
+role = 'UNSET'
 instance = 'UNSET'
-extra    = 'UNSET'
-folder   = 'UNSET'
-ip       = 'UNSET'
-
+extra = 'UNSET'
+folder = 'UNSET'
+ip = 'UNSET'
 
 ## Text for --help
 text = "Manage a given host in OMD, using the WATO API"
@@ -58,7 +57,7 @@ def printReport(result, opt):
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)
@@ -80,35 +79,35 @@ def main():
 
     argdict = omdclient.parserArgDict(opt)
     argdict['instance'] = opt.instance
-    argdict['role']     = opt.role
-    argdict['extra']    = opt.extra
+    argdict['role'] = opt.role
+    argdict['extra'] = opt.extra
     if not opt.folder == 'UNSET':
-        argdict['folder']   = opt.folder
+        argdict['folder'] = opt.folder
     if not opt.ip == 'UNSET':
-        argdict['ip']   = opt.ip
+        argdict['ip'] = opt.ip
 
     if len(args) != 2:
         p.print_help()
         sys.exit(1)
 
     request = args[0]
-    host    = args[1]
+    host = args[1]
 
     try:
 
-        if   request == 'create':
+        if request == 'create':
             value, result = omdclient.createHost(host, argdict)
-            if value == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print("error on create: %s" % result)
+            if value is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print("error on create: %s" % result)
                 sys.exit(1)
 
             print("%s - host created, will now inventory..." % host)
 
             value1, result1 = omdclient.discoverServicesHost(host, argdict)
-            if value1 == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print("error on inventory: %s" % result)
+            if value1 is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print("error on inventory: %s" % result)
                 sys.exit(1)
             else:
                 print("%s - %s" % (host, result1))
@@ -116,20 +115,19 @@ def main():
 
         elif request == 'inventory':
             value1, result1 = omdclient.discoverServicesHost(host, argdict)
-            if value1 == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print("error on inventory: %s" % result)
+            if value1 is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print("error on inventory: %s" % result)
                 sys.exit(1)
             else:
                 print("%s - %s" % (host, result1))
                 sys.exit(0)
 
-
         elif request == 'read':
             value, result = omdclient.readHost(host, argdict)
-            if value == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print(result)
+            if value is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print(result)
                 sys.exit(1)
             else:
                 printReport(result, opt)
@@ -137,17 +135,17 @@ def main():
 
         elif request == 'update':
             value, result = omdclient.updateHost(host, argdict)
-            if value == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print("error on update: %s" % result)
+            if value is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print("error on update: %s" % result)
                 sys.exit(1)
 
             print("%s - host updated, will now inventory..." % host)
 
             value1, result1 = omdclient.discoverServicesHost(host, argdict)
-            if value1 == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print("error on inventory: %s" % result)
+            if value1 is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print("error on inventory: %s" % result)
                 sys.exit(1)
             else:
                 print("%s - %s" % (host, result1))
@@ -155,14 +153,13 @@ def main():
 
         elif request == 'delete':
             value, result = omdclient.deleteHost(host, argdict)
-            if value == False:
-                if result == None: print("%s - unknown error" % host)
-                else:              print(result)
+            if value is False:
+                if result is None: print("%s - unknown error" % host)
+                else: print(result)
                 sys.exit(1)
             else:
                 print("%s - host deleted" % host)
                 sys.exit(0)
-
 
         else:
             p.print_help('invalid request name: %s' % request)

@@ -88,7 +88,7 @@ yaml:
 
 =item checkmk_role
 
-Primary sorting tag.  More-or-less corresponds to the puppet role.  
+Primary sorting tag.  More-or-less corresponds to the puppet role.
 
 Examples: bastion, htcondor_gpgrid_collector.
 
@@ -114,7 +114,7 @@ try to delete the host from monitoring.
     parameters:
       checkmk_role: devhost
       checkmk_instance: dev
-      checkmk_extra: 
+      checkmk_extra:
         - unmonitored
         - foo
 

@@ -7,7 +7,7 @@ Find hosts in Nagios that have a given problem.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, os, re, sys
+import omdclient, os, re, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -30,14 +30,14 @@ def printServiceStatusIfMatch(entry, opt):
     we'll print a longer string; otherwise, just print the host name.
     """
     status = entry[0]
-    host   = entry[1]
-    svc    = entry[2]
-    text   = entry[4]
+    host = entry[1]
+    svc = entry[2]
+    text = entry[4]
 
     if opt.verbose: text = "%s/%s: %s (%s)" % (host, svc, status, text)
     else:           text = host
 
-    if   status == 'CRIT':
+    if status == 'CRIT':
         if not opt.no_crit: print(text)
     elif status == 'UNKN':
         if not opt.no_unknown: print(text)
@@ -51,7 +51,7 @@ def printServiceStatusIfMatch(entry, opt):
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)

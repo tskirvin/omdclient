@@ -5,7 +5,7 @@
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, omdclient, optparse, os, sys
+import omdclient, os, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -25,7 +25,7 @@ usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)
@@ -46,7 +46,7 @@ def main():
         params['type'] = 'host'
         if not params['remove']:
             params['hours'] = args[2]
-            params['comment'] = ' '.join(args[3:])            
+            params['comment'] = ' '.join(args[3:])
         svc_text = '%s' % (params['host'])
 
     elif (type == 'service' or type == 'svc') and len(args) >= 5:
@@ -74,12 +74,11 @@ def main():
             if params['remove']:
                 print("%s  - downtime removed" % svc_text)
             else:
-                print("%s - downtime for %d hour(s) (probably)" \
+                print("%s - downtime for %d hour(s) (probably)"
                     % (svc_text, int(params['hours'])))
             sys.exit(0)
         else:
-            print("%s - no matching entries (probably failed)" \
-                % (svc_text))
+            print("%s - no matching entries (probably failed)" % (svc_text))
             sys.exit(1)
 
     except Exception as e:

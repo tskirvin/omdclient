@@ -5,7 +5,7 @@
 ### Declarations ########################################################
 #########################################################################
 
-import getpass, omdclient, optparse, os, sys
+import getpass, omdclient, os, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -25,17 +25,17 @@ usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
-    p.add_option ('--whoami', dest='whoami', action='store',
+    p.add_option('--whoami', dest='whoami', action='store',
         default=getpass.getuser(),
         help='invoking user (default: %default)')
     opt, args = p.parse_args()
-    params= omdclient.parserArgDict(opt)
+    params = omdclient.parserArgDict(opt)
     params['whoami'] = opt.whoami
 
     if len(args) < 3:
@@ -67,11 +67,10 @@ def main():
         report = omdclient.nagiosAck(params)
 
         if len(report) > 0:
-            print("%s - acknowledged (probably)" \
-                % (svc_text))
+            print("%s - acknowledged (probably)" % (svc_text))
             sys.exit(0)
         else:
-            print("%s - no matching entries (probably failed)" \
+            print("%s - no matching entries (probably failed)"
                 % (svc_text))
             sys.exit(1)
 

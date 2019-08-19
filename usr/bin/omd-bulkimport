@@ -7,7 +7,7 @@ Bulk import hosts into OMD from STDIN.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, os, pprint, re, socket, sys
+import omdclient, optparse, os, socket, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -17,7 +17,7 @@ import omdclient, optparse, os, pprint, re, socket, sys
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Default values for role/instance/extra for create/update.
-folder   = 'UNSET'
+folder = 'UNSET'
 
 ## Text for --help
 text = "Bulk host import for OMD, using the WATO API"
@@ -34,7 +34,7 @@ usage_text = "usage: %prog [options] < HOSTLIST"
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)
@@ -62,10 +62,10 @@ def main():
         host = line.rstrip()
         try:
             if socket.gethostbyname(host):
-               hosts.append(host)
+                hosts.append(host)
             else:
-               print("host %s does not exist in DNS, skipping" % host)
-               if not opt.check_dns: hosts.append(host)
+                print("host %s does not exist in DNS, skipping" % host)
+                if not opt.check_dns: hosts.append(host)
         except socket.gaierror as e:
             print("error looking up host %s: %s" % (host, e))
             if not opt.check_dns: hosts.append(host)

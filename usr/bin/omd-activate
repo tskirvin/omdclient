@@ -5,7 +5,7 @@
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, os, sys
+import omdclient, os, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -25,7 +25,7 @@ usage_text = "usage: %prog [options]"
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)
@@ -40,9 +40,9 @@ def main():
 
     try:
         value, result = omdclient.activateChanges(argdict)
-        if value == False:
-            if result == None: print("%s - unknown error" % host)
-            else:              print(result)
+        if not value:
+            if result is None: print("unknown error")
+            else: print(result)
             sys.exit(1)
         else:
             print(result)
@@ -50,7 +50,7 @@ def main():
     except Exception as e:
         print("failed to activate changes: %s" % (e))
         sys.exit(-1)
-    
+
 if __name__ == "__main__":
     main()
 

@@ -12,7 +12,7 @@ config = {}
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, json, optparse, os, re, ssl, sys, urllib.request, \
+import datetime, json, optparse, re, sys, urllib.request, \
     urllib.parse, urllib.error, urllib.request, urllib.error, \
     urllib.parse, yaml
 from bs4 import BeautifulSoup
@@ -33,14 +33,14 @@ def loadCfg(config_file):
         raise Exception('%s' % exc)
     except yaml.YAMLError as exc:
         raise Exception('yaml error: %s' % exc)
-        sys.exit (3)
+        sys.exit(3)
     except:
         raise Exception('unknown error: %s' % exc)
-        sys.exit (3)
+        sys.exit(3)
 
     return config
 
-def generateParser (text, usage_text, config):
+def generateParser(text, usage_text, config):
     """
     Generate an OptionParser object for use across all scripts.  We want
     something consistent so we can use the same server/site/user options
@@ -83,7 +83,7 @@ def parserArgDict(opthash):
 ### URL Management ######################################################
 #########################################################################
 
-def generateUrl (action, args):
+def generateUrl(action, args):
     """
     Generate the URL used to interact with the server.
        action   What action are we taking?  Valid options:
@@ -143,7 +143,7 @@ def generateUrl (action, args):
     elif action == 'get_host':
         url_parts.append('action=get_host')
         if 'effective_attributes' in list(args.keys()):
-            url_parts.append('effective_attributes=%s' \
+            url_parts.append('effective_attributes=%s'
                 % args['effective_attributes'])
 
     else:
@@ -154,11 +154,11 @@ def generateUrl (action, args):
         url_parts_clean.append('_secret=...')
         print("url: %s" % '&'.join(url_parts_clean))
 
-    url_parts.append ('_secret=%s' % args['apikey'])
+    url_parts.append('_secret=%s' % args['apikey'])
 
     return '&'.join(url_parts)
 
-def loadUrl (url, request_string):
+def loadUrl(url, request_string):
     """
     Load the URL and request string pair.  Returns a urllib2 response.
     """
@@ -185,15 +185,15 @@ def processUrlResponse(response, debug):
     Code taken from Ed Simmonds <esimm@fnal.gov>.
     """
 
-    data=response.read()
+    data = response.read()
 
     try:
-        jsonresult=json.loads(data)
+        jsonresult = json.loads(data)
         if debug: pprint(jsonresult)
     except ValueError:
-        soup=BeautifulSoup(data, 'lxml')
-        div1=soup.find('div', attrs={'class':'error'})
-        if div1 != None:
+        soup = BeautifulSoup(data, 'lxml')
+        div1 = soup.find('div', attrs={'class': 'error'})
+        if div1 is not None:
             print("Error returned")
             print(div1.string)
             return False, None
@@ -202,13 +202,13 @@ def processUrlResponse(response, debug):
             print(data)
             return False, None
 
-    if jsonresult['result_code']==0:
+    if jsonresult['result_code'] == 0:
         return True, jsonresult['result']
     else:
         if debug: print("result code was: %s" % jsonresult['result_code'])
         return False, jsonresult['result']
 
-    return False, result
+    return False, jsonresult
 
 #########################################################################
 ### WATO API Interactions ###############################################
@@ -245,7 +245,7 @@ def createHost(host, arghash):
     attributes = {}
     if 'role' in arghash:
         if arghash['role'] != 'UNSET':
-            attributes['tag_role']     = arghash['role']
+            attributes['tag_role'] = arghash['role']
     if 'instance' in arghash:
         if arghash['instance'] != 'UNSET':
             attributes['tag_instance'] = arghash['instance']
@@ -254,11 +254,11 @@ def createHost(host, arghash):
             attributes['ipaddress'] = arghash['ip']
     if 'extra' in arghash:
         if arghash['extra'] != 'UNSET' and '=' in arghash['extra']:
-          import shlex
-          attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
+            import shlex
+            attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
     request['attributes'] = attributes
 
-    url = generateUrl ('add_host', arghash)
+    url = generateUrl('add_host', arghash)
 
     request_string = "request=%s" % json.dumps(request)
     if arghash['debug']: print(request_string)
@@ -270,9 +270,9 @@ def readHost(host, arghash):
     """
     Get information about a host.
     """
-    url = generateUrl ('get_host', arghash)
+    url = generateUrl('get_host', arghash)
 
-    request_string='request={"hostname" : "%s"}' % ( host )
+    request_string = 'request={"hostname" : "%s"}' % (host)
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
@@ -286,7 +286,7 @@ def updateHost(host, arghash):
     else:
         return createHost(host, arghash)
 
-    url = generateUrl ('edit_host', arghash)
+    url = generateUrl('edit_host', arghash)
 
     request = {}
     request['hostname'] = host
@@ -294,7 +294,7 @@ def updateHost(host, arghash):
     attributes = {}
     if 'role' in arghash:
         if arghash['role'] != 'UNSET':
-            attributes['tag_role']     = arghash['role']
+            attributes['tag_role'] = arghash['role']
     if 'instance' in arghash:
         if arghash['instance'] != 'UNSET':
             attributes['tag_instance'] = arghash['instance']
@@ -308,7 +308,7 @@ def updateHost(host, arghash):
     request['attributes'] = attributes
 
     if 'unset' in arghash:
-        request['unset_attributes'] = [ arghash['unset'] ]
+        request['unset_attributes'] = [arghash['unset']]
 
     request_string = "request=%s" % json.dumps(request)
     if arghash['debug']: print(request_string)
@@ -333,7 +333,7 @@ def listHostsFiltered(filter, arghash):
     status, response = processUrlResponse(response, arghash['debug'])
     response_filtered = dict(response)
     for h in response:
-        if response[h].get('attributes',{}).get('site','') != filter:
+        if response[h].get('attributes', {}).get('site', '') != filter:
             del response_filtered[h]
     return status, response_filtered
 
@@ -342,7 +342,7 @@ def deleteHost(host, arghash):
     Remove a host from check_mk.
     """
     url = generateUrl('delete_host', arghash)
-    request_string='request={"hostname" : "%s"}' % ( host )
+    request_string = 'request={"hostname" : "%s"}' % (host)
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
@@ -351,7 +351,7 @@ def discoverServicesHost(host, arghash):
     Scan a host for services.
     """
     url = generateUrl('discover_services', arghash)
-    request_string='request={"hostname" : "%s"}' % ( host )
+    request_string = 'request={"hostname" : "%s"}' % (host)
     response = loadUrl(url, request_string)
     return processUrlResponse(response, arghash['debug'])
 
@@ -359,7 +359,7 @@ def discoverServicesHost(host, arghash):
 ### Nagios API Commands #################################################
 #########################################################################
 
-def generateNagiosUrl (action, args):
+def generateNagiosUrl(action, args):
     """
     Generate the URL used to interact with the server.
        action   What action are we taking?  Valid options:
@@ -401,8 +401,8 @@ def generateNagiosUrl (action, args):
     """
     baseurl = 'https://%s/%s/check_mk/view.py' % (args['server'], args['site'])
     url_parts = {}
-    url_parts['_username']     = args['user']
-    url_parts['_secret']       = args['apikey']
+    url_parts['_username'] = args['user']
+    url_parts['_secret'] = args['apikey']
     url_parts['output_format'] = 'json'
 
     if action == 'hostreport':
@@ -426,23 +426,23 @@ def generateNagiosUrl (action, args):
         else:
             if 'start' in list(args.keys()): start = args['start']
             else:                      start = datetime.datetime.now()
-            if 'end' in list(args.keys()):   end   = args['end']
+            if 'end' in list(args.keys()):   end = args['end']
             else:
                 end = start + datetime.timedelta(hours=int(args['hours']))
 
-            url_parts['_down_custom']    = 'Custom+time_range'
+            url_parts['_down_custom'] = 'Custom+time_range'
             url_parts['_down_from_date'] = start.date()
             url_parts['_down_from_time'] = start.strftime('%H:%M')
-            url_parts['_down_to_date']   = end.date()
-            url_parts['_down_to_time']   = end.strftime('%H:%M')
-            url_parts['_down_comment']   = args['comment']
+            url_parts['_down_to_date'] = end.date()
+            url_parts['_down_to_time'] = end.strftime('%H:%M')
+            url_parts['_down_comment'] = args['comment']
 
         if args['type'] == 'host':
-            url_parts['host']      = args['host']
+            url_parts['host'] = args['host']
             url_parts['view_name'] = 'hoststatus'
         elif args['type'] == 'svc' or args['type'] == 'service':
-            url_parts['host']      = args['host']
-            url_parts['service']   = args['service']
+            url_parts['host'] = args['host']
+            url_parts['service'] = args['service']
             url_parts['view_name'] = 'service'
         else:
             raise Exception('invalid downtime type: %s' % args['type'])
@@ -455,11 +455,11 @@ def generateNagiosUrl (action, args):
         url_parts['_ack_comment'] = args['comment']
         url_parts['_acknowledge'] = 'Acknowledge'
         if args['type'] == 'host':
-            url_parts['host']      = args['host']
+            url_parts['host'] = args['host']
             url_parts['view_name'] = 'hoststatus'
         elif args['type'] == 'svc' or args['type'] == 'service':
-            url_parts['host']      = args['host']
-            url_parts['service']   = args['service']
+            url_parts['host'] = args['host']
+            url_parts['service'] = args['service']
             url_parts['view_name'] = 'service'
         else:
             raise Exception('invalid ack type: %s' % args['type'])
@@ -500,7 +500,7 @@ def nagiosReport(type, argdict):
     'host_ack', or 'host_unack'.
     """
     args = argdict.copy()
-    if   type == 'svc_ack':
+    if type == 'svc_ack':
         action = 'svcreport'
         args['ack'] = 1
     elif type == 'svc_unack':
@@ -519,7 +519,7 @@ def nagiosReport(type, argdict):
     else:
         raise Exception('invalid report type: %s' % type)
 
-    url = generateNagiosUrl (action, args)
+    url = generateNagiosUrl(action, args)
     response = loadUrl(url, '')
     return processNagiosReport(response, argdict['debug'])
 
@@ -535,18 +535,18 @@ def processNagiosReport(response, debug):
     isn't always returning with json, even when we ask it to.
     """
 
-    data=response.read()
+    data = response.read()
 
     try:
-        jsonresult=json.loads(data)
+        jsonresult = json.loads(data)
         if debug: pprint(jsonresult)
     except ValueError:
         lines = data.split('\n')
         if re.match('^MESSAGE: .*$', lines[0]):
             return lines[0]
-        soup=BeautifulSoup(data, 'lxml')
-        div1=soup.find('div', attrs={'class':'error'})
-        if div1 != None:
+        soup = BeautifulSoup(data, 'lxml')
+        div1 = soup.find('div', attrs={'class': 'error'})
+        if div1 is not None:
             print("Error returned")
             print(div1.string)
             return []
@@ -557,5 +557,5 @@ def processNagiosReport(response, debug):
 
     if len(jsonresult) <= 1: return []
 
-    headers = jsonresult.pop(0)
+    jsonresult.pop(0)
     return jsonresult

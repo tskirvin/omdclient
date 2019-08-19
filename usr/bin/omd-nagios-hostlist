@@ -7,7 +7,7 @@ List all hosts in Nagios.
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, optparse, re, os, sys
+import omdclient, os, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -27,7 +27,7 @@ usage_text = "usage: %prog PROBLEM [options]"
 def main():
     config_file = os.environ.get('OMDCONFIG', config_file_base)
     try:
-        config = omdclient.loadCfg (config_file)
+        config = omdclient.loadCfg(config_file)
     except Exception as e:
         print("failed to load config: %s" % (e))
         sys.exit(3)
