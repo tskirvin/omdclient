@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.4.1
+Version:        1.4.2
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -63,6 +63,10 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 /etc/omdclient/*
 
 %changelog
+* Fri Aug 23 2019   Tim Skirvin <tskirvin@fnal.gov>     1.4.2-0
+- init.py - decoding output from urllib requests (fixes "failed to run: a
+  bytes-like object is required, not 'str'" bug)
+
 * Mon Aug 19 2019   Tim Skirvin <tskirvin@fnal.gov>     1.4.1-0
 - flake8 python linting for all
 

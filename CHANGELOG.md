@@ -10,6 +10,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+## [1.4.2] - 2019-08-23
+
+### Changed
+
+- init.py - decoding output from urllib requests (fixes "failed to run: a
+  bytes-like object is required, not 'str'" bug)
+
 ## [1.4.1] - 2019-08-19
 
 ### Changed

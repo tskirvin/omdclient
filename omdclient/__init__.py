@@ -185,7 +185,7 @@ def processUrlResponse(response, debug):
     Code taken from Ed Simmonds <esimm@fnal.gov>.
     """
 
-    data = response.read()
+    data = response.read().decode()
 
     try:
         jsonresult = json.loads(data)
@@ -535,7 +535,7 @@ def processNagiosReport(response, debug):
     isn't always returning with json, even when we ask it to.
     """
 
-    data = response.read()
+    data = response.read().decode()
 
     try:
         jsonresult = json.loads(data)
