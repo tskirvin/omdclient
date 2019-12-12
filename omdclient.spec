@@ -9,8 +9,13 @@ License:        Artistic 2.0
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
+%if 0%{?rhel} == 8
+Requires:       rsync shyaml python3-beautifulsoup4 python3-requests
+BuildRequires:  rsync python3 python3-setuptools python3-rpm-macros perl-podlators
+%else
 Requires:       rsync shyaml moreutils python36-beautifulsoup4 python36-requests
-BuildRequires:  rsync python36 python36-setuptools python3-rpm-macros
+BuildRequires:  rsync python36 python3-setuptools python3-rpm-macros perl-podlators
+%endif
 
 Source:         omdclient-%{version}-%{release}.tar.gz
 

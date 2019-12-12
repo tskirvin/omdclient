@@ -8,6 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- omdclient.spec - CentOS 8 support (mostly in Requires: and BuildRequires:)
+
 ### Changed
 
 ## [1.4.2] - 2019-08-23
