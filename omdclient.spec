@@ -1,6 +1,6 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.4.2
+Version:        1.4.3
 Release:        0%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
@@ -68,6 +68,9 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 /etc/omdclient/*
 
 %changelog
+* Thu Sep 15 2022   Tim Skirvin <tskirvin@fnal.gov>     1.4.3-0
+- __init__.py - loadCfg() fixes, uses safe_load() and a fixed exception now
+
 * Fri Aug 23 2019   Tim Skirvin <tskirvin@fnal.gov>     1.4.2-0
 - init.py - decoding output from urllib requests (fixes "failed to run: a
   bytes-like object is required, not 'str'" bug)

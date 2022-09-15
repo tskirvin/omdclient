@@ -28,13 +28,13 @@ def loadCfg(config_file):
     """
 
     try:
-        config = yaml.load(open(config_file, 'r'))
+        config = yaml.safe_load(open(config_file, 'r'))
     except IOError as exc:
         raise Exception('%s' % exc)
     except yaml.YAMLError as exc:
         raise Exception('yaml error: %s' % exc)
         sys.exit(3)
-    except:
+    except Exception as exc:
         raise Exception('unknown error: %s' % exc)
         sys.exit(3)
 
@@ -414,6 +414,8 @@ def generateNagiosUrl(action, args):
         url_parts['view_name'] = 'svcproblems_expanded'
         if 'ack' in list(args.keys()):
             url_parts['is_service_acknowledged'] = args['ack']
+        if 'all' in list(args.keys()):
+            url_parts['is_service_acknowledged'] = args['all']
 
     elif action == 'downtime':
         url_parts['_transid'] = '-1'
@@ -463,6 +465,10 @@ def generateNagiosUrl(action, args):
             url_parts['view_name'] = 'service'
         else:
             raise Exception('invalid ack type: %s' % args['type'])
+
+    elif action == 'get_host':
+        url_parts['action'] = 'get_host'
+        url_parts['host'] = 'ssiadmin4'
 
     else:
         raise Exception('invalid action: %s' % action)
@@ -516,6 +522,8 @@ def nagiosReport(type, argdict):
         action = 'hostreport'
     elif type == 'hostservice':
         action = 'svcreport'
+    elif type == 'get_host':
+        action = 'get_host'
     else:
         raise Exception('invalid report type: %s' % type)
 

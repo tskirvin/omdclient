@@ -8,9 +8,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- omdclient.spec - CentOS 8 support (mostly in Requires: and BuildRequires:)
+## [1.4.3] - 2022-09-15
 
 ### Changed
+
+- omdclient.spec - CentOS 8 support (mostly in Requires: and BuildRequires:)
+- __init__.py - fixed a bad exception in loadCfg()
+- __init__.py - switching from load() to `safe_load()` in loadCfg()
 
 ## [1.4.2] - 2019-08-23
 

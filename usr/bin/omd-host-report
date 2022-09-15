@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""
+Find hosts in Nagios that have a given problem.
+"""
+
+#########################################################################
+### Declarations ########################################################
+#########################################################################
+
+import omdclient, os, re, sys
+
+#########################################################################
+### Configuration #######################################################
+#########################################################################
+
+## Central configuration file.
+config_file_base = '/etc/omdclient/config.yaml'
+
+## Text for --help
+text = "Discover hosts with a given service problem, using the WATO API"
+usage_text = "usage: %prog PROBLEM [options]"
+
+#########################################################################
+### Subroutines #########################################################
+#########################################################################
+
+def printServiceStatusIfMatch(entry, opt):
+    """
+    Print information from a svcproblems.  If we get opt.verbose, then
+    we'll print a longer string; otherwise, just print the host name.
+    """
+    status = entry[0]
+    host = entry[1]
+    svc = entry[2]
+    text = entry[4]
+
+    if opt.verbose: text = "%s/%s: %s (%s)" % (host, svc, status, text)
+    else:           text = host
+
+    print(text)
+
+    # if status == 'CRIT':
+        # if not opt.no_crit: print(text)
+    # elif status == 'UNKN':
+        # if not opt.no_unknown: print(text)
+    # elif status == 'WARN':
+        # if not opt.no_warn: print(text)
+
+#########################################################################
+### main () #############################################################
+#########################################################################
+
+def main():
+    config_file = os.environ.get('OMDCONFIG', config_file_base)
+    try:
+        config = omdclient.loadCfg(config_file)
+    except Exception as e:
+        print("failed to load config: %s" % (e))
+        sys.exit(3)
+
+    p = omdclient.generateParser(text, usage_text, config)
+    p.add_option('--verbose', dest='verbose', action="store_true",
+        default=True, help='print more status information')
+    opt, args = p.parse_args()
+
+    argdict = omdclient.parserArgDict(opt)
+
+    if len(args) != 1:
+        p.print_help()
+        sys.exit(1)
+
+    problem = args[0]
+
+    try:
+        if problem == 'ping':
+            report = omdclient.nagiosReport('svc_all', argdict)
+            for e in report: print(e[0])
+        else:
+            p = re.compile('^%s$' % problem, re.IGNORECASE)
+            report = omdclient.nagiosReport('get_host', argdict)
+            for e in report:
+                if p.match(e[2]): printServiceStatusIfMatch(e, opt)
+
+    except Exception as e:
+        print("failed: %s" % (e))
+        sys.exit(-1)
+
+if __name__ == "__main__":
+    main()
+
+#########################################################################
+### POD Documentation ###################################################
+#########################################################################
+
+"""
+
+=head1 NAME
+
+omd-nagios-hosts-with-problem - find hosts in nagios with a given problem
+
+=head1 SYNOPSIS
+
+B<omd-nagios-hosts-with-problem> ssi_check_puppetreport
+
+B<omd-nagios-hosts-with-problem> '.*puppet.*'
+
+B<omd-nagios-hosts-with-problem> ping
+
+=head1 USAGE
+
+omd-nagios-hosts-with-problem uses the WATO interface to discover hosts
+with a given service problem, and prints them to STDOUT.  You can then use
+this information to script further automation - logging into the host to
+fix the problem, say, or re-inventorying the host.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item B<PROBLEM>
+
+What problem are we searching for?  This can be a regular expression.  We
+only print hosts that have service problems that match the regex.
+
+SPECIAL CASE: if the problem is 'ping', then we'll do a host check for
+down hosts.
+
+=item B<--no_critical>
+
+Skip 'CRIT' errors.
+
+=item B<--no_unknown>
+
+Skip 'UNKN' errors.
+
+=item B<--no_warnings>
+
+Skip 'WARN' errors.
+
+=item B<--verbose>
+
+Print more information than just the hostname.
+
+=back
+
+=head2 DEFAULT
+
+=over 4
+
+=item B<--debug>
+
+If set, print debugging information.
+
+=item B<--help>
+
+Print this information and exit.
+
+=back
+
+=head2 CONNECTION OPTIONS
+
+=over 4
+
+=item B<--apikey> I<key>
+
+Password for the API User.  Default: comes from the configuration file.
+
+=item B<--server> I<server>
+
+Host name of the server.  Default: comes from the configuration file.
+
+=item B<--site> I<site>
+
+Site name within the server.  Default: comes from the configuration file.
+
+=item B<--user> I<user>
+
+API User name.  The user must exist on the server, and be an 'automation
+user'.  Default: comes from the configuration file.
+
+=back
+
+=head2 CREATE/UPDATE OPTIONS
+
+=over 4
+
+=item role
+
+check_mk role name.  This can either be simple ('bastion') or more complex
+based on group name ('htcondor_cmsgrid_worker').  Must already exist on
+the server side.
+
+=item instance
+
+check_mk instance name.  This can be 'test', 'dev', 'itb', or anything
+else that seems appropriate.  Must already exist on the server side.
+
+=item extra
+
+Not yet in use.  If you set to 'unmonitored', then we'll delete the entry.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/omdclient/config.yaml>
+
+=back
+
+=head1 SEE ALSO
+
+https://mathias-kettner.de/checkmk_wato_webapi.html
+
+=head1 AUTHOR
+
+Tim Skirvin <tskirvin@fnal.gov>
+
+=head1 LICENSE + COPYRIGHT
+
+Copyright 2016, Fermi National Accelerator Laboratory
+
+This program is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+"""
