@@ -8,6 +8,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.4.3-1] - 2023-10-31
+
+- omdclient.spec - EL9 support
+
 ## [1.4.3] - 2022-09-15
 
 ### Changed

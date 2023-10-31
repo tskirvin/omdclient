@@ -36,7 +36,8 @@ setup (
   data_files       = [ ( 'share/man/man1', man ) ],
   scripts          = scripts,
   py_modules       = pyfiles,
-  keywords         = ['check_mk', 'omd', 'nagios', 'api', 'wato']
+  keywords         = ['check_mk', 'omd', 'nagios', 'api', 'wato'],
+  install_requires = ['bs4>=4.0.0'],
 )
 
 # add classifiers, platforms
