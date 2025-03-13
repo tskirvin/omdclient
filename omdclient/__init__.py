@@ -8,13 +8,20 @@ Shared functions for interacting with an OMD site remotely.
 
 config = {}
 
+API_URL_BASE = 'https://%s/%s/check_mk/api/1.0'
+
+HOST_STATE = { 0: 'UP', 1: 'DOWN', 2: 'UNREACHABLE' }
+SVC_STATE  = { 0: 'UP', 1: 'WARN', 2: 'CRIT', 3: 'UNKNOWN' }
+
 #########################################################################
 ### Declarations ########################################################
 #########################################################################
 
+## TODO - look through this list ##
 import datetime, json, optparse, re, sys, urllib.request, \
     urllib.parse, urllib.error, urllib.request, urllib.error, \
     urllib.parse, yaml
+import requests
 from bs4 import BeautifulSoup
 from pprint import pprint
 
@@ -75,7 +82,7 @@ def parserArgDict(opthash):
         'server': opthash.server,
         'site':   opthash.site,
         'user':   opthash.user,
-        'remove': opthash.remove
+        # 'remove': opthash.remove
     }
     return args
 
@@ -111,8 +118,13 @@ def generateUrl(action, args):
     If 'debug' is set, we'll print the URL to stdout (with the password
     blanked out).
     """
-    baseurl = 'https://%s/%s/check_mk/webapi.py?_username=%s' % \
-        (args['server'], args['site'], args['user'])
+    baseurl = 'https://%s/%s/check_mk/api/1.0' \
+        % (args['server'], args['site'])
+    baseheaders = {
+        'Authorization': ("Bearer %s %s" % (args['user'], args['apikey'])),
+        'Accept': 'appication/json',
+        'Content-Type': 'application/json'
+    }
     url_parts = [baseurl]
 
     if action == 'activate_changes':
@@ -359,9 +371,10 @@ def discoverServicesHost(host, arghash):
 ### Nagios API Commands #################################################
 #########################################################################
 
-def generateNagiosUrl(action, args):
+def nagiosQuery(action, args):
     """
-    Generate the URL used to interact with the server.
+    Do a nagios query based on the check_mk REST API.
+
        action   What action are we taking?  Valid options:
 
            ack
@@ -375,7 +388,6 @@ def generateNagiosUrl(action, args):
            server
            site
            user
-           view_name
 
                 ...and you can optionally include:
 
@@ -399,23 +411,37 @@ def generateNagiosUrl(action, args):
     If 'debug' is set, we'll print the URL to stdout (with the password
     blanked out).
     """
-    baseurl = 'https://%s/%s/check_mk/view.py' % (args['server'], args['site'])
-    url_parts = {}
-    url_parts['_username'] = args['user']
-    url_parts['_secret'] = args['apikey']
-    url_parts['output_format'] = 'json'
+    baseurl = API_URL_BASE % (args['server'], args['site'])
+    session = requests.Session()
+    session.headers['Accept'] = 'application/json'
+    session.headers['Content-Type'] = 'application/json'
+    session.headers['Authorization'] = \
+        "Bearer %s %s" % (args['user'], args['apikey'])
 
+    # hostreport - updated, pulls down a specific list of fields
     if action == 'hostreport':
-        url_parts['view_name'] = 'hostproblems_expanded'
-        if 'ack' in list(args.keys()):
-            url_parts['is_host_acknowledged'] = args['ack']
+        url = '%s/domain-types/host/collections/all' % (baseurl)
+        q1 = '{"op": "!=", "left": "state", "right": "0"}'
+        if 'ack' in args:
+            q2 = '{"op": "=", "left": "acknowledged", "right": "%s"}' % args['ack']
+            q = '{"op": "and", "expr": [%s, %s]}' % (q1, q2)
+        else:
+            q = q1
+        c = [ 'name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
 
-    elif action == 'svcreport':
-        url_parts['view_name'] = 'svcproblems_expanded'
-        if 'ack' in list(args.keys()):
-            url_parts['is_service_acknowledged'] = args['ack']
-        if 'all' in list(args.keys()):
-            url_parts['is_service_acknowledged'] = args['all']
+    elif action == 'servicereport':
+        url = '%s/domain-types/service/collections/all' % (baseurl)
+        q1 = '{"op": "!=", "left": "state", "right": "0"}'
+        if 'ack' in args:
+            q2 = '{"op": "=", "left": "acknowledged", "right": "%s"}' % args['ack']
+            q = '{"op": "and", "expr": [%s, %s]}' % (q1, q2)
+        else:
+            q = q1
+        c = [ 'host_name', 'display_name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
+        # if 'ack' in list(args.keys()):
+            # url_parts['is_service_acknowledged'] = args['ack']
+        # if 'all' in list(args.keys()):
+            # url_parts['is_service_acknowledged'] = args['all']
 
     elif action == 'downtime':
         url_parts['_transid'] = '-1'
@@ -474,13 +500,22 @@ def generateNagiosUrl(action, args):
         raise Exception('invalid action: %s' % action)
 
     if args['debug']:
-        url_parts_clean = dict(url_parts)
-        url_parts_clean['_secret'] = '...'
-        print("url: %s?%s" % (baseurl, urllib.parse.urlencode(url_parts_clean)))
+        print ("    url: %s" % url)
+        print ("  query: %s" % q)
+        print ("   cols: %s" % c)
 
-    url = "%s?%s" % (baseurl, urllib.parse.urlencode(url_parts))
-    return url
+    resp=session.get(url, params={'query': q, 'columns': c})
 
+    if resp.status_code == 200:
+        v = resp.json()
+        values = []
+        for i in v['value']:
+            values.append(i['extensions'])
+        return values
+    elif resp.status_code == 204:       # zero entries
+        return []
+    else:
+        raise RuntimeError(resp.json())
 
 def nagiosAck(params):
     """
@@ -500,36 +535,105 @@ def nagiosDowntime(params):
     response = loadUrl(url, '')
     return processNagiosReport(response, params['debug'])
 
+def nagiosHostReportFormatted(entries):
+    """
+    """
+
+    ret = []
+    for i in entries:
+        state_pretty = HOST_STATE[i['state']]
+
+        comments = []
+        for j in i['comments_with_info']:
+            comments.append('%s: %s' % (j[1], j[2]))
+
+        age = datetime.datetime.fromtimestamp(i['last_state_change'])
+        age_human = age.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        # need to parse out comments still
+        ret.append([
+            i['name'], state_pretty, i['plugin_output'], 
+            age_human,
+            '; '.join(comments)
+        ])
+
+    return ret
+
+def nagiosServiceReportFormatted(entries):
+    """
+    """
+
+    ret = []
+    for i in entries:
+        state_pretty = SVC_STATE[i['state']]
+
+        name = '%s/%s' % (i['host_name'], i['display_name'])
+
+        age = datetime.datetime.fromtimestamp(i['last_state_change'])
+        age_human = age.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        comments = []
+        for j in i['comments_with_info']:
+            comments.append('%s: %s' % (j[1], j[2]))
+
+        ret.append([
+            i['host_name'],
+            i['display_name'],
+            state_pretty, 
+            i['plugin_output'], 
+            age_human,
+            '; '.join(comments)
+        ])
+
+    return ret
+
 def nagiosReport(type, argdict):
     """
     Generate a nagios report.  Type can be one of 'svc_ack', 'svc_unack',
     'host_ack', or 'host_unack'.
     """
     args = argdict.copy()
-    if type == 'svc_ack':
-        action = 'svcreport'
+
+    if type == 'host_ack':
         args['ack'] = 1
-    elif type == 'svc_unack':
-        action = 'svcreport'
-        args['ack'] = 0
-    elif type == 'host_ack':
-        action = 'hostreport'
-        args['ack'] = 1
+        values = nagiosQuery('hostreport', args)
+        return nagiosHostReportFormatted(values)
+
     elif type == 'host_unack':
-        action = 'hostreport'
         args['ack'] = 0
+        values = nagiosQuery('hostreport', args)
+        return nagiosHostReportFormatted(values)
+
+    elif type == 'host':
+        values = nagiosQuery('hostreport', args)
+        return nagiosHostReportFormatted(values)
+
+    elif type == 'svc_ack':
+        args['ack'] = 1
+        values = nagiosQuery('servicereport', args)
+        return nagiosServiceReportFormatted(values)
+
+    elif type == 'svc_unack':
+        args['ack'] = 0
+        values = nagiosQuery('servicereport', args)
+        return nagiosServiceReportFormatted(values)
+
     elif type == 'host':
         action = 'hostreport'
+
     elif type == 'hostservice':
         action = 'svcreport'
+
     elif type == 'get_host':
         action = 'get_host'
+
     else:
         raise Exception('invalid report type: %s' % type)
 
-    url = generateNagiosUrl(action, args)
-    response = loadUrl(url, '')
-    return processNagiosReport(response, argdict['debug'])
+    # return nagiosQuery(action, args)
+    # url = generateNagiosUrl(action, args)
+    # response = loadUrl(url, '')
+    # return processNagiosReport(response, argdict['debug'])
 
 def processNagiosReport(response, debug):
     """

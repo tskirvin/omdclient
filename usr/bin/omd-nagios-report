@@ -27,10 +27,9 @@ def printHostReport(array):
     """
     Print a 2-3 line report on a host.
     """
-    (host, icons, state, text, svc_ok, svc_warn, svc_crit, svc_unknown,
-        svc_pending, state_age, comments) = array
+    (host, state, text, state_age, comments) = array
     print("%-45s  %-4s  %.25s" % (host, state, state_age))
-    print("  %s" % text.encode('utf-8'))
+    print("  %s" % text.encode('utf-8').decode('utf-8'))
     if comments:
         p = re.compile ('\(Nagios Process\): This .* has been scheduled for fixed downtime')
         comments = p.sub ('DOWNTIME', comments)
@@ -41,10 +40,9 @@ def printSvcReport(array):
     """
     Print a 2-3 line report on a service.
     """
-    (crit, host, svc, tags, text, state_age, check_age, perfometer,
-        comments) = array
-    print("%-45s  %-4s  %.25s" % ("%s/%s" % (host, svc), crit, state_age))
-    print("  %s" % text.encode('utf-8'))
+    (host, svc, state, text, state_age, comments) = array
+    print("%-45s  %-4s  %.25s" % ("%s/%s" % (host, svc), state, state_age))
+    print("  %s" % text.encode('utf-8').decode('utf-8'))
     if comments:
         print("  ACK: %-70.70s" % comments)
 
@@ -65,6 +63,7 @@ def main():
     argdict = omdclient.parserArgDict(opt)
 
     try:
+        host_ack = []
         host_ack = omdclient.nagiosReport('host_ack',   argdict)
         host_unack = omdclient.nagiosReport('host_unack', argdict)
         svc_ack = omdclient.nagiosReport('svc_ack',   argdict)
@@ -195,7 +194,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2015, Fermi National Accelerator Laboratory
+Copyright 2015-2025, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.
