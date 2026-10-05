@@ -2,6 +2,8 @@
 Shared functions for interacting with an OMD site remotely.
 """
 
+# https://docs.checkmk.com/latest/en/rest_api.html
+
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
@@ -17,12 +19,7 @@ SVC_STATE  = { 0: 'UP', 1: 'WARN', 2: 'CRIT', 3: 'UNKNOWN' }
 ### Declarations ########################################################
 #########################################################################
 
-## TODO - look through this list ##
-import datetime, json, optparse, re, sys, urllib.request, \
-    urllib.parse, urllib.error, urllib.request, urllib.error, \
-    urllib.parse, yaml
-import requests
-from bs4 import BeautifulSoup
+import datetime, json, optparse, re, requests, sys, yaml
 from pprint import pprint
 
 #########################################################################
@@ -70,7 +67,6 @@ def generateParser(text, usage_text, config):
     p.add_option_group(group)
     return p
 
-
 def parserArgDict(opthash):
     """
     Converts the data from the OptionParser object into a dictionary
@@ -90,17 +86,20 @@ def parserArgDict(opthash):
 ### URL Management ######################################################
 #########################################################################
 
-def generateUrl(action, args):
+def generateRequests(action, args):
     """
-    Generate the URL used to interact with the server.
+    Generate the Requests call data used to interact with the server.
+    Returns a URL, a headers hash, and a json content hash.
+
        action   What action are we taking?  Valid options:
 
            activate_changes
-           add_host
+           create_host
            delete_host
            discover_services
            get_all_hosts
            get_host
+           update_host
 
        args     Argument dict.  You must have at least these keys:
 
@@ -115,112 +114,131 @@ def generateUrl(action, args):
            foreign_ok                For 'activate_changes'
            create_folders            For 'add_host'
 
-    If 'debug' is set, we'll print the URL to stdout (with the password
+           hostname
+
+    If 'debug' is set, we'll print the fields to stdout (with the password
     blanked out).
     """
     baseurl = 'https://%s/%s/check_mk/api/1.0' \
         % (args['server'], args['site'])
-    baseheaders = {
+    headers = {
         'Authorization': ("Bearer %s %s" % (args['user'], args['apikey'])),
-        'Accept': 'appication/json',
+        'Accept': 'application/json',
         'Content-Type': 'application/json'
     }
-    url_parts = [baseurl]
+    content = {}
 
-    if action == 'activate_changes':
-        url_parts.append('action=activate_changes')
-        url_parts.append('mode=dirty')
+    if action == 'activate_changes': # TODO
+        url = baseurl + f"/domain-types/activation_run/actions/activate-changes/invoke"
+        content['sites'] = [ args['site'] ]
         if 'foreign_ok' in list(args.keys()):
-            if args['foreign_ok']: url_parts.append('allow_foreign_changes=1')
+            if args['foreign_ok']:
+                content['force_foreign_changes'] = True
 
-    elif action == 'add_host':
+    elif action == 'create_host': # TODO
         url_parts.append('action=add_host')
         if 'create_folders' in list(args.keys()):
             if args['create_folders']: url_parts.append('create_folders=0')
 
-    elif action == 'delete_host':
+    elif action == 'delete_host': # TODO
         url_parts.append('action=delete_host')
 
-    elif action == 'edit_host':
-        url_parts.append('action=edit_host')
-
-    elif action == 'discover_services':
-        url_parts.append('action=discover_services')
-        if 'tabula_rasa' in list(args.keys()):
-            if args['tabula_rasa']: url_parts.append('mode=refresh')
+    elif action == 'discover_services': # TODO
+        url = baseurl + '/domain-types/service_discovery_run/actions/start/invoke'
 
     elif action == 'get_all_hosts':
-        url_parts.append('action=get_all_hosts')
+        url = baseurl + '/domain-types/host_config/collections/all'
 
-    elif action == 'get_host':
+    elif action == 'get_host': # TODO
         url_parts.append('action=get_host')
         if 'effective_attributes' in list(args.keys()):
             url_parts.append('effective_attributes=%s'
                 % args['effective_attributes'])
 
+    elif action == 'update_host':
+        hostname = args['host_name']
+        url = baseurl + '/objects/host_config/' + hostname
+
     else:
         raise Exception('invalid action: %s' % action)
 
     if args['debug']:
-        url_parts_clean = url_parts
-        url_parts_clean.append('_secret=...')
-        print("url: %s" % '&'.join(url_parts_clean))
+        print(("url: %s" % url), file=sys.stderr)
+        headers_clean = dict(headers)
+        headers_clean['Authorization'] = '...'
+        print(("headers: ", headers_clean), file=sys.stderr)
+        print(("base content: ", content), file=sys.stderr)
 
-    url_parts.append('_secret=%s' % args['apikey'])
+    return url, headers, content
 
-    return '&'.join(url_parts)
-
-def loadUrl(url, request_string):
+def loadRequestsGet(url, headers, code):
     """
-    Load the URL and request string pair.  Returns a urllib2 response.
+    Load a requests get() call with url/headers/code.  Returns a requests 
+    response, to be parsed elsewhere.
     """
-    try:
-        response = urllib.request.urlopen(url, request_string.encode('utf-8'))
-    except urllib.error.HTTPError as err:
-        if err.code == 404:
-            raise Exception('Page not found')
-        elif err.code == 403:
-            raise Exception('Access Denied')
-        else:
-            raise Exception('http error, code %s' % err.code)
-    except urllib.error.URLError as err:
-        raise Exception('url error: %s' % err.reason)
+    session = requests.session()
+    session.max_redirects = 100
+    session.headers['Accept'] = 'application/json'
+    response = session.get (
+        url,
+        headers=headers,
+        json=code,
+        allow_redirects=True
+    )
+
     return response
 
-def processUrlResponse(response, debug):
+def loadRequestsPut(url, headers, code):
     """
-    Process the response from loadUrl().  Returns two objects: did we get
+    Load a requests post() call with url/headers/code.  Returns a requests 
+    response, to be parsed elsewhere.
+    """
+    session = requests.session()
+    session.max_redirects = 100
+    session.headers['Accept'] = 'application/json'
+    response = session.post (
+        url,
+        headers=headers,
+        json=code,
+        allow_redirects=True
+    )
+
+    return response
+
+def processRequestsResponse(response, debug):
+    """
+    Process the response from loadRequests().  Returns two objects: did we get
     a 'True' response from the server, and the response itself.
 
     If 'debug' is set, we'll print a lot of extra debugging information.
 
-    Code taken from Ed Simmonds <esimm@fnal.gov>.
+    This is meant to be a "generic" setup.  I don't love it.  It may go away.
     """
 
-    data = response.read().decode()
-
     try:
-        jsonresult = json.loads(data)
-        if debug: pprint(jsonresult)
-    except ValueError:
-        soup = BeautifulSoup(data, 'lxml')
-        div1 = soup.find('div', attrs={'class': 'error'})
-        if div1 is not None:
-            print("Error returned")
-            print(div1.string)
-            return False, None
-        else:
-            print("ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:")
-            print(data)
-            return False, None
+        json = response.json()
+    except:
+        json = {}
 
-    if jsonresult['result_code'] == 0:
-        return True, jsonresult['result']
+    if debug:
+        print('response: ', response)
+        print('headers: ', response.headers)
+        print('json: ', json)
+
+    if response.status_code in (200, 201):
+        return True, response.json()
+    elif response.status_code == 204:
+        return True, {}
+    elif response.status_code == 303:
+        print('Redirected to', response.headers['location'])
+    elif 'detail' in response.json():
+        return False, response.json()['detail']
+    elif response.status_code == 400:
+        return False, response.json()
     else:
-        if debug: print("result code was: %s" % jsonresult['result_code'])
-        return False, jsonresult['result']
+        raise RuntimeError(pprint.pformat(response.json()))
 
-    return False, jsonresult
+    return False, {}
 
 #########################################################################
 ### WATO API Interactions ###############################################
@@ -230,9 +248,9 @@ def activateChanges(arghash):
     """
     Activate changes.  This can be slow.
     """
-    url = generateUrl('activate_changes', arghash)
-    response = loadUrl(url, '')
-    return processUrlResponse(response, arghash['debug'])
+    url, headers, content = generateRequests('activate_changes', arghash)
+    response = loadRequestsPut(url, headers, content)
+    return processRequestsResponse(response, arghash['debug'])
 
 def createHost(host, arghash):
     """
@@ -294,60 +312,65 @@ def updateHost(host, arghash):
     we'll call createHost instead.
     """
 
-    if readHost(host, arghash): pass
-    else:
-        return createHost(host, arghash)
+    arghash['host_name'] = host
 
-    url = generateUrl('edit_host', arghash)
+    print(arghash)
 
-    request = {}
-    request['hostname'] = host
+    # if readHost(host, arghash): pass
+    # else:
+        # # return createHost(host, arghash)
 
+    url, headers, content = generateRequests('update_host', arghash)
+
+    create_attributes = {}
     attributes = {}
-    if 'role' in arghash:
-        if arghash['role'] != 'UNSET':
-            attributes['tag_role'] = arghash['role']
-    if 'instance' in arghash:
-        if arghash['instance'] != 'UNSET':
-            attributes['tag_instance'] = arghash['instance']
-    if 'ip' in arghash:
-        if arghash['ip'] != 'UNSET':
-            attributes['ipaddress'] = arghash['ip']
-    if 'extra' in arghash:
-        if arghash['extra'] != 'UNSET' and '=' in arghash['extra']:
-            import shlex
-            attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
-    request['attributes'] = attributes
 
-    if 'unset' in arghash:
-        request['unset_attributes'] = [arghash['unset']]
+    if 'attributes' in arghash:
+        content['attributes'] = [arghash['attributes']]
+    if 'update_attributes' in arghash:
+        content['update_attributes'] = [arghash['update_attributes']]
+    if 'unset_attributes' in arghash:
+        content['unset_attributes'] = [arghash['unset_attributes']]
 
-    request_string = "request=%s" % json.dumps(request)
-    if arghash['debug']: print(request_string)
+    response = loadRequestsPut(url, headers, content)
 
-    response = loadUrl(url, request_string)
-    return processUrlResponse(response, arghash['debug'])
+    print (processRequestsResponse(response, arghash['debug']))
 
-def listHosts(arghash):
+def listHosts(filt, arghash):
     """
-    List all hosts.
+    List all hosts.  Returns the json that is generated, which is a lot of
+    data.
     """
-    url = generateUrl('get_all_hosts', arghash)
-    response = loadUrl(url, '')
-    return processUrlResponse(response, arghash['debug'])
+    debug = arghash['debug']
 
-def listHostsFiltered(filter, arghash):
-    """
-    List all hosts filtered by site.
-    """
-    url = generateUrl('get_all_hosts', arghash)
-    response = loadUrl(url, '')
-    status, response = processUrlResponse(response, arghash['debug'])
-    response_filtered = dict(response)
-    for h in response:
-        if response[h].get('attributes', {}).get('site', '') != filter:
-            del response_filtered[h]
-    return status, response_filtered
+    url, headers, content = generateRequests('get_all_hosts', arghash)
+
+    # content['fields'] = '(title)'
+    content['include_links'] = False
+    content['site'] = arghash['site']
+    content['effective_attributes'] = False
+    if filt: content['hostname'] = filt
+
+    if debug: print(('content: ', content), file=sys.stderr)
+    response = loadRequestsGet(url, headers, content)
+
+    try:
+        json = response.json()
+    except:
+        json = {}
+
+    if debug:
+        print(('response: ', response), file=sys.stderr)
+        print(('json: ', pprint(json)), file=sys.stderr)
+
+    if response.status_code == 200:
+        return json
+    elif response.status_code == 303:
+        print(('Redirect to', response.headers['location']), file=sys.stderr)
+    elif 'detail' in json:
+        raise RuntimeError("error: %s" % json['detail'])
+    else:
+        raise RuntimeError(response.status_code)
 
 def deleteHost(host, arghash):
     """
@@ -362,10 +385,34 @@ def discoverServicesHost(host, arghash):
     """
     Scan a host for services.
     """
-    url = generateUrl('discover_services', arghash)
-    request_string = 'request={"hostname" : "%s"}' % (host)
-    response = loadUrl(url, request_string)
-    return processUrlResponse(response, arghash['debug'])
+    url, headers, content = generateRequests('discover_services', arghash)
+    content['host_name'] = host
+    if 'tabula_rasa' in arghash: content['mode'] = 'refresh'
+    response = loadRequestsPut(url, headers, content)
+
+    try:
+        json = response.json()
+    except:
+        json = {}
+
+    debug = arghash['debug']
+    if debug:
+        print('response: ', response)
+        # print('headers: ', response.headers)
+        print('json: ', json)
+
+    if response.status_code == 200:
+        return True, 'inventory complete'
+    if response.status_code == 204:     # the API does not know about this code but it seems to be a default answer
+        return True, 'operation complete, no changes'
+    elif response.status_code == 303:
+        print('Redirected to', response.headers['location'])
+    elif 'detail' in json:
+        return False, json['detail']
+    elif response.status_code == 400:
+        return False, json
+    else:
+        raise RuntimeError(response.status_code)
 
 #########################################################################
 ### Nagios API Commands #################################################
@@ -552,7 +599,7 @@ def nagiosHostReportFormatted(entries):
 
         # need to parse out comments still
         ret.append([
-            i['name'], state_pretty, i['plugin_output'], 
+            i['name'], state_pretty, i['plugin_output'],
             age_human,
             '; '.join(comments)
         ])
@@ -579,8 +626,8 @@ def nagiosServiceReportFormatted(entries):
         ret.append([
             i['host_name'],
             i['display_name'],
-            state_pretty, 
-            i['plugin_output'], 
+            state_pretty,
+            i['plugin_output'],
             age_human,
             '; '.join(comments)
         ])

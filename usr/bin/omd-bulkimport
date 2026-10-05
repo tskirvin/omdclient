@@ -27,6 +27,12 @@ usage_text = "usage: %prog [options] < HOSTLIST"
 ### Subroutines #########################################################
 #########################################################################
 
+def print_debug(text):
+    """
+    Print debugging information to STDERR.
+    """
+    print(text, file=sys.stderr)
+
 #########################################################################
 ### main () #############################################################
 #########################################################################
@@ -73,25 +79,38 @@ def main():
             print("error looking up host %s: %s" % (host, e))
             if not opt.check_dns: hosts.append(host)
 
-    ret, omdhostlist = omdclient.listHosts(argdict)
+    try:
+        omdhostlist = omdclient.listHosts(None, argdict)
+    except Exception as e:
+        print("could not get existing host list: %s" % e)
+        sys.exit(-1)
+        
     for host in hosts:
-        if host in omdhostlist:
-            h = omdhostlist[host]
-            if 'path' in h and h['path'] == folder:
-                if opt.debug:
-                    print("%s: already in folder %s, skipping" % (host, folder))
+        match = list(filter(lambda h: h['title'] == host, omdhostlist['value']))
+        if len(match) >= 1:
+            h = match[0]
+            current_folder = h['extensions']['folder']
+            if current_folder == folder:
+                if opt.debug: print_debug ("%s: already in folder %s, skipping" % (host, folder))
                 pass
-
-            elif 'path' in h:
+            else:
                 if opt.noop:
-                    print("%s: was in folder %s, would delete/re-add to %s (noop)" % (host, h['path'], folder))
+                    print("%s: was in folder %s, move to %s (noop)" % (host, current_folder, folder))
+                    pass
                 else:
-                    print("%s: was in folder %s, delete/re-add to %s" % (host, h['path'], folder))
-                    new = argdict
-                    new['folder'] = folder
+                    print("%s: was in folder %s, move to %s" % (host, current_folder, folder))
 
-                    omdclient.deleteHost(host, argdict)
-                    omdclient.createHost(host, new)
+                new = argdict
+                new['update_attributes'] = {}
+                new['update_attributes']['folder'] = folder
+                omdclient.updateHost(host, new)
+
+
+
+                    # new call for this - /objects/host_config/HOST_NAME
+                    # update_attributes { 'folder': 
+                    # omdclient.deleteHost(host, argdict)
+                    # omdclient.createHost(host, new)
 
         else:
             if opt.noop:

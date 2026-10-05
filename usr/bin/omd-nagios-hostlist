@@ -35,22 +35,16 @@ def main():
     p = omdclient.generateParser(text, usage_text, config)
     p.add_option('--verbose', dest='verbose', action="store_true",
         default=False, help='print more status information')
-    p.add_option('--filter-site', dest='filter_site',
-        default=False, help='Filter result by monitored site. Default: disabled')
     opt, args = p.parse_args()
 
     argdict = omdclient.parserArgDict(opt)
 
     try:
-        if opt.filter_site:
-            hosts = omdclient.listHostsFiltered(opt.filter_site, argdict)
-        else:
-            hosts = omdclient.listHosts(argdict)
+        hosts = omdclient.listHosts(None, argdict)
         h = []
-        for i in hosts[1]:
-            if i: h.append(i)
-        h.sort()
-        for i in h: print(i)
+        for host in hosts['value']:
+            h.append(host['title'])
+        for i in sorted(h): print(i)
 
     except Exception as e:
         print("failed: %s" % (e))
@@ -91,10 +85,6 @@ If set, print debugging information.
 =item B<--help>
 
 Print this information and exit.
-
-=item B<--filter-site>
-
-Filter host by site monitored. Default: disabled
 
 =back
 
@@ -139,7 +129,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2017, Fermi National Accelerator Laboratory
+Copyright 2017-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.
