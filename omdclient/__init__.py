@@ -424,8 +424,6 @@ def pendingChanges(arghash):
     try:    json = response.json()
     except: json = {}
 
-    print(json)
-
     if response.status_code == 200:
         return response
     if response.status_code == 204:
@@ -475,8 +473,8 @@ def updateFolder(host, folder, arghash):
 
 def updateHost(host, arghash):
     """
-    Update information from a host.  If the host does not already exist,
-    we'll call createHost instead.
+    Update information from a host.  We aren't actually doing anything useful
+    here at the moment, but I'm leaving the hooks here.
     """
 
     arghash['host_name'] = host
@@ -485,17 +483,37 @@ def updateHost(host, arghash):
     url, headers, content = generateRequests('update_host', arghash)
 
     headers['If-Match'] = object.headers['ETag']
+    headers['host_name'] = host
 
-    content['host_name'] = host
-    if 'attributes' in arghash:
-        content['attributes'] = [arghash['attributes']]
-    if 'update_attributes' in arghash:
-        content['update_attributes'] = [arghash['update_attributes']]
-    if 'unset_attributes' in arghash:
-        content['unset_attributes'] = [arghash['unset_attributes']]
+    attributes = {}
+    unset_attributes = {}
+
+    # if 'ip' in arghash:
+    #     if arghash['ip'] == 'UNSET':
+    #         unset_attributes['extensions']['ipaddress'] = True
+    #     else:
+    #         attributes['extensions']['ipaddress'] = arghash['ip']
+    # if 'extra' in arghash:
+        # if arghash['extra'] != 'UNSET' and '=' in arghash['extra']:
+            # import shlex
+            # attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
+
+    content['attributes'] = attributes
+    content['unset_attributes'] = unset_attributes
 
     response = _loadRequestsPut(url, headers, content)
-    print (processRequestsResponse(response, arghash['debug']))
+
+    try:    json = response.json()
+    except: json = {}
+
+    if response.status_code == 200:
+        return response
+    if response.status_code == 204:
+        return response
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        return False
 
 #########################################################################
 ### Nagios API Commands #################################################

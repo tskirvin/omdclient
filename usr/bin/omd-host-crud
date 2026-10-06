@@ -37,7 +37,6 @@ def printReport(result, opt):
     host.
     """
     att = result['extensions']['attributes']
-    print(result['id'])
     if att.get('alias', None):
         print("  %-20s %s" % ('alias', att['alias']))
     print("  %-20s %s" % ('folder', result['extensions']['folder']))
@@ -78,9 +77,6 @@ def main():
     opt, args = p.parse_args()
 
     argdict = omdclient.parserArgDict(opt)
-    argdict['instance'] = opt.instance
-    argdict['role'] = opt.role
-    argdict['extra'] = opt.extra
     if not opt.folder == 'UNSET':
         argdict['folder'] = opt.folder
     if not opt.ip == 'UNSET':
@@ -125,25 +121,8 @@ def main():
                 sys.exit(1)
 
         elif request == 'update':       # TODO
-            try:
-                result = omdclient.updateHost(host, argdict)
-                if result is None:
-                    print("%s - unknown error" % host)
-                    sys.exit(1)
-            except Exception as e:
-                print ("no host matched: %s" % host)
-                sys.exit(1)
-
-            print("%s - host updated, will now inventory..." % host)
-
-            try:
-                result = omdclient.discoverServicesHost(host, argdict)
-            except Exception as e:
-                print ("%s - host not inventoried: %s" % (host, e))
-                sys.exit(2)
-
-            print("%s - ...host inventoried" % host)
-            sys.exit(0)
+            print "not currently implemented because we don't use it"
+            sys.exit(1)
 
         elif request == 'delete':
             try:
