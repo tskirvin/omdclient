@@ -40,3 +40,7 @@ man:
 
 build: tar man
 	debuild -b -uc -us
+
+local-install:
+	pipx install .
+	pipx runpip omdclient install -r requirements.txt
