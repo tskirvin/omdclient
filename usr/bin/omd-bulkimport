@@ -100,17 +100,7 @@ def main():
                 else:
                     print("%s: was in folder %s, move to %s" % (host, current_folder, folder))
 
-                new = argdict
-                new['update_attributes'] = {}
-                new['update_attributes']['folder'] = folder
-                omdclient.updateHost(host, new)
-
-
-
-                    # new call for this - /objects/host_config/HOST_NAME
-                    # update_attributes { 'folder': 
-                    # omdclient.deleteHost(host, argdict)
-                    # omdclient.createHost(host, new)
+                omdclient.updateFolder(host, folder, argdict)
 
         else:
             if opt.noop:

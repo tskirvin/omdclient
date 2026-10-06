@@ -36,11 +36,11 @@ def printReport(result, opt):
     Given the result from query(), print a useful report regarding the
     host.
     """
-    att = result['attributes']
-    print(result['hostname'])
+    att = result['extensions']['attributes']
+    print(result['id'])
     if att.get('alias', None):
         print("  %-20s %s" % ('alias', att['alias']))
-    print("  %-20s %s" % ('folder',       result['path']))
+    print("  %-20s %s" % ('folder', result['extensions']['folder']))
     print("  tags")
     for i in sorted(att):
         m = re.search('tag_(.*)', i)
@@ -95,45 +95,34 @@ def main():
 
     try:
 
-        if request == 'create':
-            value, result = omdclient.createHost(host, argdict)
-            if value is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print("error on create: %s" % result)
+        if request == 'create':     # REDO
+            try:
+                result = omdclient.createHost(host, argdict)
+            except Exception as e:
+                print ("%s - host not created: %s" % (host, e))
                 sys.exit(1)
 
             print("%s - host created, will now inventory..." % host)
 
-            value1, result1 = omdclient.discoverServicesHost(host, argdict)
-            if value1 is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print("error on inventory: %s" % result)
-                sys.exit(1)
-            else:
-                print("%s - %s" % (host, result1))
-                sys.exit(0)
+            try:
+                result = omdclient.discoverServicesHost(host, argdict)
+            except Exception as e:
+                print ("%s - host not inventoried: %s" % (host, e))
+                sys.exit(2)
 
-        elif request == 'inventory':
-            value1, result1 = omdclient.discoverServicesHost(host, argdict)
-            if value1 is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print("error on inventory: %s" % result)
-                sys.exit(1)
-            else:
-                print("%s - %s" % (host, result1))
-                sys.exit(0)
+            print("%s - ...host inventoried" % host)
+            sys.exit(0)
 
         elif request == 'read':
-            value, result = omdclient.readHost(host, argdict)
-            if value is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print(result)
-                sys.exit(1)
-            else:
+            try:
+                result = omdclient.readHostData(host, argdict)
                 printReport(result, opt)
                 sys.exit(0)
+            except Exception as e:
+                print ("no host matched: %s" % host)
+                sys.exit(1)
 
-        elif request == 'update':
+        elif request == 'update':       # REDO
             value, result = omdclient.updateHost(host, argdict)
             if value is False:
                 if result is None: print("%s - unknown error" % host)
@@ -152,14 +141,17 @@ def main():
                 sys.exit(0)
 
         elif request == 'delete':
-            value, result = omdclient.deleteHost(host, argdict)
-            if value is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print(result)
+            try:
+                result = omdclient.deleteHost(host, argdict)
+                if result: 
+                    print ("%s - host has been deleted" % host)
+                    sys.exit(0) 
+                else:      
+                    print ("%s - host was not deleted" % host)
+                    sys.exit(1)
+            except Exception as e:
+                print ("%s - failed: %s" % (host, e))
                 sys.exit(1)
-            else:
-                print("%s - host deleted" % host)
-                sys.exit(0)
 
         else:
             p.print_help('invalid request name: %s' % request)
@@ -186,8 +178,6 @@ omd-host-crud - create/read/update/delete omd host entries
 
 B<omd-host-crud> create cms-foo --role unconfigured
 
-B<omd-host-crud> inventory cms-foo
-
 B<omd-host-crud> read cms-foo
 
 B<omd-host-crud> update cms-foo --instance dev
@@ -207,7 +197,7 @@ to the OMD/WATO check_mk web interface.
 
 =item I<action>
 
-create, inventory, read, update, delete.
+create, read, update, delete.
 
 =item I<hostname>
 
@@ -291,7 +281,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2015-2017, Fermi National Accelerator Laboratory
+Copyright 2015-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

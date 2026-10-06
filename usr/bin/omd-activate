@@ -39,17 +39,13 @@ def main():
     argdict['foreign_ok'] = opt.foreign_ok
 
     try:
-        value, result = omdclient.activateChanges(argdict)
-        if not value:
-            if result is None: print("unknown error")
-            else: print(result)
-            sys.exit(1)
-        else:
-            print(result)
-            sys.exit(0)
+        print ("trying to activate changes (may take a while)")
+        result = omdclient.activateChanges(argdict)
+        if result: print(result)
+        sys.exit(0)
     except Exception as e:
-        print("failed to activate changes: %s" % (e))
-        sys.exit(-1)
+        print ("changes not activated: %s" % (e))
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

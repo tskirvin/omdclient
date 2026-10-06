@@ -78,7 +78,6 @@ def parserArgDict(opthash):
         'server': opthash.server,
         'site':   opthash.site,
         'user':   opthash.user,
-        # 'remove': opthash.remove
     }
     return args
 
@@ -99,26 +98,19 @@ def generateRequests(action, args):
            discover_services
            get_all_hosts
            get_host
+           pending_changes
+           update_folder
            update_host
 
-       args     Argument dict.  You must have at least these keys:
+       args     Argument dict.
 
-           apikey
-           server
-           site
-           user
-
-                ...and you can optionally include:
-
-           effective_attributes      For 'get_host'
-           foreign_ok                For 'activate_changes'
-           create_folders            For 'add_host'
-
-           hostname
-
-    If 'debug' is set, we'll print the fields to stdout (with the password
-    blanked out).
+           apikey       (required)
+           server       (required)
+           site         (required)
+           user         (required)
+           debug        If set, we'll print lots of data to stderr.
     """
+
     baseurl = 'https://%s/%s/check_mk/api/1.0' \
         % (args['server'], args['site'])
     headers = {
@@ -135,29 +127,33 @@ def generateRequests(action, args):
             if args['foreign_ok']:
                 content['force_foreign_changes'] = True
 
-    elif action == 'create_host': # TODO
-        url_parts.append('action=add_host')
-        if 'create_folders' in list(args.keys()):
-            if args['create_folders']: url_parts.append('create_folders=0')
-
-    elif action == 'delete_host': # TODO
-        url_parts.append('action=delete_host')
-
-    elif action == 'discover_services': # TODO
-        url = baseurl + '/domain-types/service_discovery_run/actions/start/invoke'
-
-    elif action == 'get_all_hosts':
+    elif action == 'create_host':
         url = baseurl + '/domain-types/host_config/collections/all'
 
-    elif action == 'get_host': # TODO
-        url_parts.append('action=get_host')
-        if 'effective_attributes' in list(args.keys()):
-            url_parts.append('effective_attributes=%s'
-                % args['effective_attributes'])
+    elif action == 'delete_host':
+        hostname = args['host_name']
+        url = baseurl + '/objects/host_config/' + hostname
+
+    elif action == 'discover_services':
+        url = baseurl + '/domain-types/service_discovery_run/actions/start/invoke'
+
+    elif action == 'get_all_hosts': # TODO
+        url = baseurl + '/domain-types/host_config/collections/all'
+
+    elif action == 'get_host':
+        hostname = args['host_name']
+        url = baseurl + '/objects/host_config/' + hostname
+
+    elif action == 'pending_changes':
+        url = baseurl + '/domain-types/activation_run/collections/pending_changes'
 
     elif action == 'update_host':
         hostname = args['host_name']
         url = baseurl + '/objects/host_config/' + hostname
+
+    elif action == 'update_folder':
+        hostname = args['host_name']
+        url = "%s/objects/host_config/%s/actions/move/invoke" % (baseurl, hostname)
 
     else:
         raise Exception('invalid action: %s' % action)
@@ -171,39 +167,46 @@ def generateRequests(action, args):
 
     return url, headers, content
 
-def loadRequestsGet(url, headers, code):
+#############################################################################
+### Requests Helper Functions ###############################################
+#############################################################################
+
+def _session():
     """
-    Load a requests get() call with url/headers/code.  Returns a requests 
-    response, to be parsed elsewhere.
+    Defaults for requests sessions within this module
     """
     session = requests.session()
-    session.max_redirects = 100
+    session.max_redirects = 500
     session.headers['Accept'] = 'application/json'
-    response = session.get (
-        url,
-        headers=headers,
-        json=code,
-        allow_redirects=True
-    )
+    return session
 
-    return response
-
-def loadRequestsPut(url, headers, code):
+def _loadRequestsDelete(url, headers, code):
     """
-    Load a requests post() call with url/headers/code.  Returns a requests 
+    Load a requests delete() call with url/headers/code.  Returns a requests
     response, to be parsed elsewhere.
     """
-    session = requests.session()
-    session.max_redirects = 100
-    session.headers['Accept'] = 'application/json'
-    response = session.post (
-        url,
-        headers=headers,
-        json=code,
-        allow_redirects=True
-    )
+    return _session().delete (url, headers=headers, json=code, allow_redirects=True)
 
-    return response
+def _loadRequestsGet(url, headers, code):
+    """
+    Load a requests get() call with url/headers/code.  Returns a requests
+    response, to be parsed elsewhere.
+    """
+    return _session().get(url, headers=headers, json=code, allow_redirects=True)
+
+def _loadRequestsPost(url, headers, code):
+    """
+    Load a requests post() call with url/headers/code.  Returns a requests
+    response, to be parsed elsewhere.
+    """
+    return _session().post(url, headers=headers, json=code, allow_redirects=True)
+
+def _loadRequestsPut(url, headers, code):
+    """
+    Load a requests put() call with url/headers/code.  Returns a requests
+    response, to be parsed elsewhere.
+    """
+    return _session().put(url, headers=headers, json=code, allow_redirects=True)
 
 def processRequestsResponse(response, debug):
     """
@@ -240,37 +243,88 @@ def processRequestsResponse(response, debug):
 
     return False, {}
 
+def parseError(json):
+    """
+    Take the 'title' and 'fields' fields from a failed check_mk call and
+    make them into a nice error string, suitable for exceptions.
+    """
+
+    title = json['title']
+    err = []
+    if 'fields' in json:
+        for i in json['fields']:
+            for j in json['fields'][i]:
+                err.append(j)
+        text = ';'.join(err)
+    else:
+        text = json['detail']
+    return ("%s: %s" % (title, text))
+
+
 #########################################################################
-### WATO API Interactions ###############################################
+### check_mk API Interactions ###########################################
 #########################################################################
+
+def pendingChanges(arghash):
+    """
+    """
+    url, headers, content = generateRequests('pending_changes', arghash)
+    response = _loadRequestsGet(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+
+    if response.status_code == 200:
+        return response
+    if response.status_code == 204:
+        return response
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        return False
+
 
 def activateChanges(arghash):
     """
     Activate changes.  This can be slow.
     """
     url, headers, content = generateRequests('activate_changes', arghash)
-    response = loadRequestsPut(url, headers, content)
-    return processRequestsResponse(response, arghash['debug'])
+
+    # we need to query this first to get the information to activate with
+    object = pendingChanges(arghash)
+    headers['If-Match'] = object.headers['ETag']
+
+    if 'foreign_ok' in arghash:
+        content['force_foreign_changes'] = arghash['foreign_ok']
+
+    content['redirect'] = True
+
+    response = _loadRequestsPost(url, headers, content)
+    (ret, text) = processRequestsResponse(response, arghash['debug'])
+    if ret: return "changes activated"
+    else: return text
 
 def createHost(host, arghash):
     """
     Create a host entry.
 
-        folder      Default: omdclient-api
+        folder      Default: '/'
         role
         instance
         extra
 
     Note that `tag_role` and `tag_instance` are tags used locally to tie
-    together local local puppet instance and our OMD folders.  You don't
+    together local puppet instance and our OMD folders.  You don't
     have to use them and may cheerfully ignore them.
     """
 
-    request = {}
-    request['hostname'] = host
+    arghash['host_name'] = host
+    url, headers, content = generateRequests('create_host', arghash)
 
-    if 'folder' in arghash: request['folder'] = arghash['folder']
-    else:                   request['folder'] = 'omdclient-api'
+    if 'folder' in arghash: content['folder'] = arghash['folder']
+    else:                   content['folder'] = '/'
+
+    content['host_name'] = host
 
     attributes = {}
     if 'role' in arghash:
@@ -286,25 +340,58 @@ def createHost(host, arghash):
         if arghash['extra'] != 'UNSET' and '=' in arghash['extra']:
             import shlex
             attributes.update(dict(token.split('=') for token in shlex.split(arghash['extra'])))
-    request['attributes'] = attributes
 
-    url = generateUrl('add_host', arghash)
+    content['attributes'] = attributes
 
-    request_string = "request=%s" % json.dumps(request)
-    if arghash['debug']: print(request_string)
+    response = _loadRequestsPost(url, headers, content)
 
-    response = loadUrl(url, request_string)
-    return processUrlResponse(response, arghash['debug'])
+    try:    json = response.json()
+    except: json = {}
+
+    if response.status_code == 200:
+        return True
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        return False
 
 def readHost(host, arghash):
     """
-    Get information about a host.
+    Get information about a host.  Returns the the whole requests object;
+    you will probably need response.headers['ETag'] a lot of the time.
     """
-    url = generateUrl('get_host', arghash)
+    url, headers, content = generateRequests('get_host', arghash)
+    arghash['host_name'] = host
+    content = 'request={"hostname" : "%s"}' % (host)
+    response = _loadRequestsGet(url, headers, content)
 
-    request_string = 'request={"hostname" : "%s"}' % (host)
-    response = loadUrl(url, request_string)
-    return processUrlResponse(response, arghash['debug'])
+    return response
+
+def readHostData(host, arghash):
+    """
+    Like readHost(), but only returns the response.  This is closer to what
+    you probably want most times when called from a script.
+    """
+    arghash['host_name'] = host
+    response = readHost(host, arghash)
+    return response.json()
+
+def updateFolder(host, folder, arghash):
+    """
+    Update the folder of a host.
+    """
+
+    arghash['host_name'] = host
+    object = readHost(host, arghash)
+
+    # get the host wtih a single query
+    url, headers, content = generateRequests('update_folder', arghash)
+
+    content['target_folder'] = folder
+    headers['If-Match'] = object.headers['ETag']
+
+    response = _loadRequestsPut(url, headers, content)
+    print (processRequestsResponse(response, arghash['debug']))
 
 def updateHost(host, arghash):
     """
@@ -313,18 +400,13 @@ def updateHost(host, arghash):
     """
 
     arghash['host_name'] = host
-
-    print(arghash)
-
-    # if readHost(host, arghash): pass
-    # else:
-        # # return createHost(host, arghash)
+    object = readHost(host, arghash)
 
     url, headers, content = generateRequests('update_host', arghash)
 
-    create_attributes = {}
-    attributes = {}
+    headers['If-Match'] = object.headers['ETag']
 
+    content['host_name'] = host
     if 'attributes' in arghash:
         content['attributes'] = [arghash['attributes']]
     if 'update_attributes' in arghash:
@@ -332,8 +414,7 @@ def updateHost(host, arghash):
     if 'unset_attributes' in arghash:
         content['unset_attributes'] = [arghash['unset_attributes']]
 
-    response = loadRequestsPut(url, headers, content)
-
+    response = _loadRequestsPut(url, headers, content)
     print (processRequestsResponse(response, arghash['debug']))
 
 def listHosts(filt, arghash):
@@ -352,12 +433,10 @@ def listHosts(filt, arghash):
     if filt: content['hostname'] = filt
 
     if debug: print(('content: ', content), file=sys.stderr)
-    response = loadRequestsGet(url, headers, content)
+    response = _loadRequestsGet(url, headers, content)
 
-    try:
-        json = response.json()
-    except:
-        json = {}
+    try:    json = response.json()
+    except: json = {}
 
     if debug:
         print(('response: ', response), file=sys.stderr)
@@ -376,10 +455,23 @@ def deleteHost(host, arghash):
     """
     Remove a host from check_mk.
     """
-    url = generateUrl('delete_host', arghash)
-    request_string = 'request={"hostname" : "%s"}' % (host)
-    response = loadUrl(url, request_string)
-    return processUrlResponse(response, arghash['debug'])
+    arghash['host_name'] = host
+    url, headers, content = generateRequests('delete_host', arghash)
+    response = _loadRequestsDelete(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+
+    if arghash['debug']:
+        print(('response: ', response), file=sys.stderr)
+        print(('json: ', pprint(json)), file=sys.stderr)
+
+    if response.status_code == 204:
+        return True
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        return False
 
 def discoverServicesHost(host, arghash):
     """
@@ -388,7 +480,7 @@ def discoverServicesHost(host, arghash):
     url, headers, content = generateRequests('discover_services', arghash)
     content['host_name'] = host
     if 'tabula_rasa' in arghash: content['mode'] = 'refresh'
-    response = loadRequestsPut(url, headers, content)
+    response = _loadRequestsPost(url, headers, content)
 
     try:
         json = response.json()
@@ -402,17 +494,13 @@ def discoverServicesHost(host, arghash):
         print('json: ', json)
 
     if response.status_code == 200:
-        return True, 'inventory complete'
-    if response.status_code == 204:     # the API does not know about this code but it seems to be a default answer
-        return True, 'operation complete, no changes'
-    elif response.status_code == 303:
-        print('Redirected to', response.headers['location'])
+        return True
+    elif response.status_code == 204:     # the API does not know about this code but it seems to be a default answer
+        return True
     elif 'detail' in json:
-        return False, json['detail']
-    elif response.status_code == 400:
-        return False, json
+        raise RuntimeError(parseError(json))
     else:
-        raise RuntimeError(response.status_code)
+        raise False
 
 #########################################################################
 ### Nagios API Commands #################################################
