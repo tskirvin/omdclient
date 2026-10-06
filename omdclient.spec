@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
-Version:        1.9.9
-Release:        0%{?dist}
+Version:        2.0.0
+Release:        pre1%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -67,7 +67,7 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 /etc/omdclient/*
 
 %changelog
-* Mon Oct 05 2026   Tim Skirvin <tskirvin@fnal.gov>     1.9.9-0
+* Mon Oct 05 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre1
 - preparing for REST API-only release
 
 * Thu Feb 20 2025   Tim Skirvin <tskirvin@fnal.gov>     1.4.4-0

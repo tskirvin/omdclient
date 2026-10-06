@@ -121,7 +121,7 @@ def main():
                 sys.exit(1)
 
         elif request == 'update':       # TODO
-            print "not currently implemented because we don't use it"
+            print("not currently implemented because we don't use it")
             sys.exit(1)
 
         elif request == 'delete':
@@ -164,7 +164,7 @@ B<omd-host-crud> create cms-foo --role unconfigured
 
 B<omd-host-crud> read cms-foo
 
-B<omd-host-crud> update cms-foo --instance dev
+B<omd-host-crud> update cms-foo --instance dev (DISABLED)
 
 B<omd-host-crud> delete cms-foo
 
@@ -172,6 +172,9 @@ B<omd-host-crud> delete cms-foo
 
 omd-host-crud provides a CRUD (Create/Read/Update/Delete) interface to
 the check_mk API.
+
+(We're skipping update for now because it's not general enough or specific
+enough.)
 
 =head1 ARGUMENTS
 

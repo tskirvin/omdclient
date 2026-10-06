@@ -30,7 +30,7 @@ def printHostReport(array):
     print("%-45s  %-4s  %.25s" % (host, state, state_age))
     print("  %s" % text.encode('utf-8').decode('utf-8'))
     if comments:
-        p = re.compile ('\(Nagios Process\): This .* has been scheduled for fixed downtime')
+        p = re.compile ('This .* has been scheduled for fixed downtime')
         comments = p.sub ('DOWNTIME', comments)
         print("  ACK - %-70.70s" % comments)
 
