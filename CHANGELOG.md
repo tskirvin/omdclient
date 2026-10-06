@@ -8,7 +8,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.9.9-0] - 2026-10-07
+## [2.0.0-pre2] - 2026-10-06
+
+- more general fixes before releasing 2.0.0
+
+## [2.0.0-pre1] - 2026-10-06
 
 - updated to use the 1.0 Check\_MK API (massive refactor); pre-release before
   v2.

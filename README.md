@@ -67,38 +67,6 @@ configs, e.g.:
 
     OMDCONFIG=/tmp/myconfig.yaml omd-activate
 
-### Configuration of 'expanded views'
-
-The report scripts depend on 'expanded view' versions of the
-`hostproblems` and `svcproblems` views, which add comments.  In order to
-add these, you generally have to:
-
-1.  Edit view `hostproblems` - it's a default view, so you'll go to 'clone'.
-    * Change the name from `hostproblems` to `hostproblems_expanded`.
-    * Update the list of columns to read:
-        1. Hostname
-        2. Host icons
-        3. Host state
-        4. Output of host check plugin
-        5. Number of services in state OK
-        6. Number of services in state WARN
-        7. Number of services in state UNKNOWN
-        8. Number of services in state CRIT
-        9. Number of services in state PENDING
-        10. The age of the current host state
-        11. Host comments
-    * (newer versions) set to 'public' and 'hidden'.
-    * Save.
-2.  Edit the view `svcproblems` and created `svcproblems_expanded`, same
-    as above but just add the column `Service Comments`.
-
-In newer versions of check\_mk, you may also need to make these views
-Public (check `Visibility` / `Make this view available for other users` /
-`Publish to all users`).  Also, the `hostproblems` base view may have
-changed: I have for `hostproblems_expanded`:
-
-(Thanks to Christian Bryn - https://github.com/epleterte - for the docs!)
-
 ## How To Build
 
 There is a `Makefile.bak` and a `*.spec` file that mirrors my local build
@@ -110,6 +78,11 @@ in `*.spec`.  Scripts from `usr/bin/*` go into your path; create
 `/etc/omdclient/config.yaml` as described above; make man pages with
 `pod2man` if you're ambitious; and run `python setup.py install` to
 install the python library.
+
+Also possible to do it all with pipx:
+
+    pipx install .
+    pipx runpip omdclient install -r requirements.txt
 
 ### Debian
 

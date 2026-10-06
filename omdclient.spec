@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
 Version:        2.0.0
-Release:        pre1%{?dist}
+Release:        pre2%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -10,10 +10,10 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
 %if 0%{?rhel} >= 8
-Requires:       rsync shyaml python3-beautifulsoup4 python3-requests
+Requires:       rsync shyaml python3-requests
 BuildRequires:  rsync python3 python3-setuptools python3-rpm-macros perl-podlators
 %else
-Requires:       rsync shyaml moreutils python36-beautifulsoup4 python36-requests
+Requires:       rsync shyaml moreutils python36-requests
 BuildRequires:  rsync python36 python3-setuptools python3-rpm-macros perl-podlators
 %endif
 
@@ -59,7 +59,6 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 %files
 %defattr(-,root,root)
 %config(noreplace) /etc/omdclient/config.yaml
-%config(noreplace) /etc/omdclient/place.holder
 %{_bindir}/omd-*
 /usr/share/man/man1/*
 %{python3_sitelib}/omdclient/*py*
@@ -67,7 +66,10 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 /etc/omdclient/*
 
 %changelog
-* Mon Oct 05 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre1
+* Tue Oct 06 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre2
+- cleanup
+
+* Tue Oct 06 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre1
 - preparing for REST API-only release
 
 * Thu Feb 20 2025   Tim Skirvin <tskirvin@fnal.gov>     1.4.4-0
