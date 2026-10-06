@@ -10,12 +10,12 @@ import omdclient, os, sys
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
-## Managed via central libraries and /etc/omd_client
+## Managed via central libraries and /etc/omdclient
 
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "Reinventory a given node through the check_mk/WATO interface"
+text = "Reinventory a given node through the check_mk API"
 usage_text = "usage: %prog [options]"
 
 #########################################################################
@@ -40,13 +40,16 @@ def main():
 
     error = 0
     for host in args:
-        value, result = omdclient.discoverServicesHost(host, argdict)
-        if value is False:
-            if result is None: print("%s - unknown error" % host)
-            else: print("%s - error on inventory: %s" % (host, result))
+        try:
+            result = omdclient.discoverServicesHost(host, argdict)
+            if result:
+                print ("%s - inventoried (no longer includes data)" % host)
+            else:
+                print ("%s - failed to inventory (no error)" % host)
+                error = 1
+        except Exception as e:
+            print("%s - error on inventory: %s" % (host, e))
             error = 1
-        else:
-            print("%s - %s" % (host, result))
 
     sys.exit(error)
 
@@ -108,7 +111,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 

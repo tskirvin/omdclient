@@ -3,12 +3,12 @@
 omdclient provides a suite of command-line tools to interact with the APIs
 associated with the `check_mk`/Open Monitoring Distribution tool suite.
 
-## WATO APIs
+## check\_mk API
 
-WATO is used to create, remove, and modify entries within the OMD user
-suite.  This is documented at:
+<https://docs.checkmk.com/latest/en/rest_api.html>
 
-<http://mathias-kettner.com/checkmk_wato_webapi.html>
+This interface has been standard since about check\_mk 2.0.  It's more
+powerful and more complex than their old WATO API.
 
 ### omd-activate
 
@@ -30,10 +30,6 @@ update/remove a given host tag in OMD
 ### omd-reinventory
 
 Reinventory a host in OMD.
-
-## Multisite/Nagios
-
-<https://mathias-kettner.de/checkmk_multisite_automation.html>
 
 ### omd-nagios-ack
 

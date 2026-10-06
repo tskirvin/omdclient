@@ -10,13 +10,12 @@ import getpass, omdclient, os, sys
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
-## Managed via central libraries and /etc/omd_client
 
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "acknowledge problems using OMD API"
-usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
+text = "acknowledge problems using check_mk API"
+usage_text = "usage: %prog [options] [host|service] HOST [SVC] comment"
 
 #########################################################################
 ### main () #############################################################
@@ -64,14 +63,13 @@ def main():
     params['comment'] = "%s (%s)" % (params['comment'], params['whoami'])
 
     try:
-        report = omdclient.nagiosAck(params)
+        (value,txt) = omdclient.nagiosAck(params)
 
-        if len(report) > 0:
-            print("%s - acknowledged (probably)" % (svc_text))
+        if value:
+            print ("%s - acknowledged (%s)" % (svc_text, txt))
             sys.exit(0)
         else:
-            print("%s - no matching entries (probably failed)"
-                % (svc_text))
+            print ("%s - failed to ack (%s)" % (svc_text, txt))
             sys.exit(1)
 
     except Exception as e:
@@ -99,10 +97,8 @@ B<omd-nagios-ack> service cmsadmin1 puppet-report 'known problem'
 
 =head1 USAGE
 
-omd-nagios-ack uses the OMD autmation API to acknowledge a host or service
-alert.  It works on the standard nagios limitations - you can send a
-request, but there's no way to get back a response.  We try to guess a
-response anyway, but it's not horribly reliable.
+omd-nagios-ack uses the check_mk API to acknowledge a host or service
+alert.
 
 =head1 ARGUMENTS
 
@@ -165,7 +161,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -173,7 +169,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2015, Fermi National Accelerator Laboratory
+Copyright 2015-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

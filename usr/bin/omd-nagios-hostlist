@@ -17,7 +17,7 @@ import omdclient, os, sys
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "List all hosts in Nagios, using the WATO API"
+text = "List all hosts in Nagios, using the check_mk API"
 usage_text = "usage: %prog PROBLEM [options]"
 
 #########################################################################

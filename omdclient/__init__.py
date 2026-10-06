@@ -28,7 +28,7 @@ from pprint import pprint
 
 def loadCfg(config_file):
     """
-    Load a .yaml configuration file into the config hash.
+    Load an omdclient config yaml file into the config hash.
     """
 
     try:
@@ -62,8 +62,6 @@ def generateParser(text, usage_text, config):
         help='user name (default: %default)')
     group.add_option('--apikey', dest='apikey', default=config['apikey'],
         help='api key (not printing the default)')
-    group.add_option('--remove', action="store_true", dest='remove', default=False,
-        help='removes a downtime')
     p.add_option_group(group)
     return p
 
@@ -111,8 +109,7 @@ def generateRequests(action, args):
            debug        If set, we'll print lots of data to stderr.
     """
 
-    baseurl = 'https://%s/%s/check_mk/api/1.0' \
-        % (args['server'], args['site'])
+    baseurl = API_URL_BASE % (args['server'], args['site'])
     headers = {
         'Authorization': ("Bearer %s %s" % (args['user'], args['apikey'])),
         'Accept': 'application/json',
@@ -120,12 +117,9 @@ def generateRequests(action, args):
     }
     content = {}
 
-    if action == 'activate_changes': # TODO
+    if action == 'activate_changes':
         url = baseurl + f"/domain-types/activation_run/actions/activate-changes/invoke"
         content['sites'] = [ args['site'] ]
-        if 'foreign_ok' in list(args.keys()):
-            if args['foreign_ok']:
-                content['force_foreign_changes'] = True
 
     elif action == 'create_host':
         url = baseurl + '/domain-types/host_config/collections/all'
@@ -135,7 +129,10 @@ def generateRequests(action, args):
         url = baseurl + '/objects/host_config/' + hostname
 
     elif action == 'discover_services':
+        hostname = args['host_name']
         url = baseurl + '/domain-types/service_discovery_run/actions/start/invoke'
+        content['host_name'] = hostname
+        content['mode'] = 'fix_all'
 
     elif action == 'get_all_hosts': # TODO
         url = baseurl + '/domain-types/host_config/collections/all'
@@ -171,14 +168,58 @@ def generateRequests(action, args):
 ### Requests Helper Functions ###############################################
 #############################################################################
 
-def _session():
+def parseError(json):
     """
-    Defaults for requests sessions within this module
+    Take the 'title' and 'fields' fields from a failed check_mk call and
+    make them into a nice error string, suitable for exceptions.
     """
-    session = requests.session()
-    session.max_redirects = 500
-    session.headers['Accept'] = 'application/json'
-    return session
+
+    title = json['title']
+    err = []
+    if 'fields' in json:
+        for i in json['fields']:
+            for j in json['fields'][i]:
+                err.append(j)
+        text = ';'.join(err)
+    else:
+        text = json['detail']
+    return ("%s: %s" % (title, text))
+
+def processRequestsResponse(response, debug):
+    """
+    Process the response from loadRequests().  Returns two objects: did we get
+    a 'True' response from the server, and the response itself.
+
+    If 'debug' is set, we'll print a lot of extra debugging information.
+
+    This is meant to be a "generic" setup.  I don't love it.
+    """
+
+    try:
+        json = response.json()
+    except:
+        json = {}
+
+    if debug:
+        print('response: ', response)
+        print('headers: ', response.headers)
+        print('json: ', json)
+
+    if response.status_code in (200, 201):
+        return True, response.json()
+    elif response.status_code == 204:
+        return True, {}
+    elif response.status_code == 303:
+        print('Redirected to', response.headers['location'])
+    elif 'detail' in response.json():
+        # return False, response.json()['detail']
+        return False, parseError(response.json())
+    elif response.status_code == 400:
+        return False, response.json()
+    else:
+        raise RuntimeError(pprint.pformat(response.json()))
+
+    return False, {}
 
 def _loadRequestsDelete(url, headers, code):
     """
@@ -208,81 +249,18 @@ def _loadRequestsPut(url, headers, code):
     """
     return _session().put(url, headers=headers, json=code, allow_redirects=True)
 
-def processRequestsResponse(response, debug):
+def _session():
     """
-    Process the response from loadRequests().  Returns two objects: did we get
-    a 'True' response from the server, and the response itself.
-
-    If 'debug' is set, we'll print a lot of extra debugging information.
-
-    This is meant to be a "generic" setup.  I don't love it.  It may go away.
+    Defaults for requests sessions within this module
     """
-
-    try:
-        json = response.json()
-    except:
-        json = {}
-
-    if debug:
-        print('response: ', response)
-        print('headers: ', response.headers)
-        print('json: ', json)
-
-    if response.status_code in (200, 201):
-        return True, response.json()
-    elif response.status_code == 204:
-        return True, {}
-    elif response.status_code == 303:
-        print('Redirected to', response.headers['location'])
-    elif 'detail' in response.json():
-        return False, response.json()['detail']
-    elif response.status_code == 400:
-        return False, response.json()
-    else:
-        raise RuntimeError(pprint.pformat(response.json()))
-
-    return False, {}
-
-def parseError(json):
-    """
-    Take the 'title' and 'fields' fields from a failed check_mk call and
-    make them into a nice error string, suitable for exceptions.
-    """
-
-    title = json['title']
-    err = []
-    if 'fields' in json:
-        for i in json['fields']:
-            for j in json['fields'][i]:
-                err.append(j)
-        text = ';'.join(err)
-    else:
-        text = json['detail']
-    return ("%s: %s" % (title, text))
-
+    session = requests.session()
+    session.max_redirects = 100
+    session.headers['Accept'] = 'application/json'
+    return session
 
 #########################################################################
 ### check_mk API Interactions ###########################################
 #########################################################################
-
-def pendingChanges(arghash):
-    """
-    """
-    url, headers, content = generateRequests('pending_changes', arghash)
-    response = _loadRequestsGet(url, headers, content)
-
-    try:    json = response.json()
-    except: json = {}
-
-    if response.status_code == 200:
-        return response
-    if response.status_code == 204:
-        return response
-    elif 'detail' in json:
-        raise RuntimeError(parseError(json))
-    else:
-        return False
-
 
 def activateChanges(arghash):
     """
@@ -290,13 +268,14 @@ def activateChanges(arghash):
     """
     url, headers, content = generateRequests('activate_changes', arghash)
 
-    # we need to query this first to get the information to activate with
+    # we need to query pending changes first to get a required field
     object = pendingChanges(arghash)
     headers['If-Match'] = object.headers['ETag']
 
     if 'foreign_ok' in arghash:
         content['force_foreign_changes'] = arghash['foreign_ok']
 
+    # wait until it's done; may want to change this
     content['redirect'] = True
 
     response = _loadRequestsPost(url, headers, content)
@@ -350,6 +329,107 @@ def createHost(host, arghash):
 
     if response.status_code == 200:
         return True
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        return False
+
+def deleteHost(host, arghash):
+    """
+    Remove a host from check_mk.
+    """
+    arghash['host_name'] = host
+    url, headers, content = generateRequests('delete_host', arghash)
+    response = _loadRequestsDelete(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+    if arghash['debug']:
+        print(('response: ', response), file=sys.stderr)
+        print(('json: ', pprint(json)), file=sys.stderr)
+
+    if response.status_code == 204:
+        return True
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        return False
+
+def discoverServicesHost(host, arghash):
+    """
+    Scan a host for services.  Returns True or False.
+    """
+    arghash['host_name'] = host
+    url, headers, content = generateRequests('discover_services', arghash)
+    content['host_name'] = host
+    if 'tabula_rasa' in arghash: content['mode'] = 'refresh'
+    response = _loadRequestsPost(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+    if arghash['debug']:
+        print(('response: ', response), file=sys.stderr)
+        print(('json: ', json), file=sys.stderr)
+
+    if response.status_code == 200:
+        return True
+    elif response.status_code == 204:
+        return True
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        raise False
+
+def listHosts(filt, arghash):
+    """
+    List all hosts on the site.  Returns the json that is generated,
+    which is a lot of data.
+    """
+    url, headers, content = generateRequests('get_all_hosts', arghash)
+
+    content['include_links'] = False
+    content['site'] = arghash['site']
+    content['effective_attributes'] = False
+    if filt: content['hostname'] = filt
+
+    debug = arghash['debug']
+
+    if debug: print(('content: ', content), file=sys.stderr)
+    response = _loadRequestsGet(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+    if debug:
+        print(('response: ', response), file=sys.stderr)
+        print(('json: ', pprint(json)), file=sys.stderr)
+
+    if response.status_code == 200:
+        return json
+    elif response.status_code == 303:
+        print(('Redirect to', response.headers['location']), file=sys.stderr)
+        return json
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        raise RuntimeError(response.status_code)
+
+def pendingChanges(arghash):
+    """
+    List pending changes on the site.  This is now a prereq before
+    activating changes.
+    """
+    url, headers, content = generateRequests('pending_changes', arghash)
+    response = _loadRequestsGet(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+
+    print(json)
+
+    if response.status_code == 200:
+        return response
+    if response.status_code == 204:
+        return response
     elif 'detail' in json:
         raise RuntimeError(parseError(json))
     else:
@@ -417,98 +497,33 @@ def updateHost(host, arghash):
     response = _loadRequestsPut(url, headers, content)
     print (processRequestsResponse(response, arghash['debug']))
 
-def listHosts(filt, arghash):
-    """
-    List all hosts.  Returns the json that is generated, which is a lot of
-    data.
-    """
-    debug = arghash['debug']
-
-    url, headers, content = generateRequests('get_all_hosts', arghash)
-
-    # content['fields'] = '(title)'
-    content['include_links'] = False
-    content['site'] = arghash['site']
-    content['effective_attributes'] = False
-    if filt: content['hostname'] = filt
-
-    if debug: print(('content: ', content), file=sys.stderr)
-    response = _loadRequestsGet(url, headers, content)
-
-    try:    json = response.json()
-    except: json = {}
-
-    if debug:
-        print(('response: ', response), file=sys.stderr)
-        print(('json: ', pprint(json)), file=sys.stderr)
-
-    if response.status_code == 200:
-        return json
-    elif response.status_code == 303:
-        print(('Redirect to', response.headers['location']), file=sys.stderr)
-    elif 'detail' in json:
-        raise RuntimeError("error: %s" % json['detail'])
-    else:
-        raise RuntimeError(response.status_code)
-
-def deleteHost(host, arghash):
-    """
-    Remove a host from check_mk.
-    """
-    arghash['host_name'] = host
-    url, headers, content = generateRequests('delete_host', arghash)
-    response = _loadRequestsDelete(url, headers, content)
-
-    try:    json = response.json()
-    except: json = {}
-
-    if arghash['debug']:
-        print(('response: ', response), file=sys.stderr)
-        print(('json: ', pprint(json)), file=sys.stderr)
-
-    if response.status_code == 204:
-        return True
-    elif 'detail' in json:
-        raise RuntimeError(parseError(json))
-    else:
-        return False
-
-def discoverServicesHost(host, arghash):
-    """
-    Scan a host for services.
-    """
-    url, headers, content = generateRequests('discover_services', arghash)
-    content['host_name'] = host
-    if 'tabula_rasa' in arghash: content['mode'] = 'refresh'
-    response = _loadRequestsPost(url, headers, content)
-
-    try:
-        json = response.json()
-    except:
-        json = {}
-
-    debug = arghash['debug']
-    if debug:
-        print('response: ', response)
-        # print('headers: ', response.headers)
-        print('json: ', json)
-
-    if response.status_code == 200:
-        return True
-    elif response.status_code == 204:     # the API does not know about this code but it seems to be a default answer
-        return True
-    elif 'detail' in json:
-        raise RuntimeError(parseError(json))
-    else:
-        raise False
-
 #########################################################################
 ### Nagios API Commands #################################################
 #########################################################################
 
 def nagiosQuery(action, args):
     """
-    Do a nagios query based on the check_mk REST API.
+    Do a slightly weird nagios query using parameters rather than passing in
+    content directly.
+    """
+    url, headers, content = generateSessionNagios(action, args)
+    resp = _session().get(url, headers=headers, params=content)
+
+    if resp.status_code == 200:
+        v = resp.json()
+        values = []
+        for i in v['value']:
+            values.append(i['extensions'])
+        return values
+    elif resp.status_code == 204:       # zero entries
+        return []
+    else:
+        raise RuntimeError(resp.json())
+
+def generateSessionNagios(action, args):
+    """
+    Generate a nagios query session parameter set based on the based on
+    the check_mk REST API.
 
        action   What action are we taking?  Valid options:
 
@@ -546,23 +561,63 @@ def nagiosQuery(action, args):
     If 'debug' is set, we'll print the URL to stdout (with the password
     blanked out).
     """
-    baseurl = API_URL_BASE % (args['server'], args['site'])
-    session = requests.Session()
-    session.headers['Accept'] = 'application/json'
-    session.headers['Content-Type'] = 'application/json'
-    session.headers['Authorization'] = \
-        "Bearer %s %s" % (args['user'], args['apikey'])
 
-    # hostreport - updated, pulls down a specific list of fields
-    if action == 'hostreport':
-        url = '%s/domain-types/host/collections/all' % (baseurl)
+    baseurl = API_URL_BASE % (args['server'], args['site'])
+    headers = {
+        'Authorization': ("Bearer %s %s" % (args['user'], args['apikey'])),
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+    content = {}
+
+    if action == 'ack':
+        content['host_name'] = args['host']
+
+        if args['type'] == 'host':
+            url = baseurl + '/domain-types/acknowledge/collections/host'
+            content['acknowledge_type'] = 'host'
+        elif args['type'] == 'service':
+            url = baseurl + '/domain-types/acknowledge/collections/service'
+            content['service_description'] = args['service']
+            content['acknowledge_type'] = 'service'
+        else:
+            raise Exception('invalid ack type: %s' % args['type'])
+
+        content['comment'] = args['comment']
+
+    elif action == 'downtime':
+        if args['type'] == 'host':
+            url = baseurl + '/domain-types/downtime/collections/host'
+            content['downtime_type'] = 'host'
+        elif args['type'] == 'service':
+            url = baseurl + '/domain-types/downtime/collections/service'
+            content['service_descriptions'] = [ args['service'] ]
+            content['downtime_type'] = 'service'
+        else:
+            raise Exception('invalid downtime type: %s' % args['type'])
+
+        # generate start/end times if necessary
+        if 'start' in list(args.keys()): start = args['start']
+        else: start = datetime.datetime.now()
+        if 'end' in list(args.keys()): end = args['end']
+        else: end = start + datetime.timedelta(hours=int(args['hours']))
+
+        content['host_name']  = args['host']
+        content['comment']    = args['comment']
+        content['start_time'] = start.strftime('%Y-%m-%dT%H:%M%z')
+        content['end_time']   = end.strftime('%Y-%m-%dT%H:%M%z')
+
+    elif action == 'hostreport':
+        url = baseurl + '/domain-types/host/collections/all'
         q1 = '{"op": "!=", "left": "state", "right": "0"}'
         if 'ack' in args:
             q2 = '{"op": "=", "left": "acknowledged", "right": "%s"}' % args['ack']
             q = '{"op": "and", "expr": [%s, %s]}' % (q1, q2)
         else:
             q = q1
-        c = [ 'name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
+
+        content['query'] = q
+        content['columns'] = [ 'name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
 
     elif action == 'servicereport':
         url = '%s/domain-types/service/collections/all' % (baseurl)
@@ -573,105 +628,44 @@ def nagiosQuery(action, args):
         else:
             q = q1
         c = [ 'host_name', 'display_name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
-        # if 'ack' in list(args.keys()):
-            # url_parts['is_service_acknowledged'] = args['ack']
-        # if 'all' in list(args.keys()):
-            # url_parts['is_service_acknowledged'] = args['all']
 
-    elif action == 'downtime':
-        url_parts['_transid'] = '-1'
-        url_parts['_do_confirm'] = 'yes'
-        url_parts['_do_actions'] = 'yes'
-
-        if args['remove']:
-            url_parts['_remove_downtimes'] = 'Remove'
-            url_parts['_down_remove'] = 'Remove'
-        else:
-            if 'start' in list(args.keys()): start = args['start']
-            else:                      start = datetime.datetime.now()
-            if 'end' in list(args.keys()):   end = args['end']
-            else:
-                end = start + datetime.timedelta(hours=int(args['hours']))
-
-            url_parts['_down_custom'] = 'Custom+time_range'
-            url_parts['_down_from_date'] = start.date()
-            url_parts['_down_from_time'] = start.strftime('%H:%M')
-            url_parts['_down_to_date'] = end.date()
-            url_parts['_down_to_time'] = end.strftime('%H:%M')
-            url_parts['_down_comment'] = args['comment']
-
-        if args['type'] == 'host':
-            url_parts['host'] = args['host']
-            url_parts['view_name'] = 'hoststatus'
-        elif args['type'] == 'svc' or args['type'] == 'service':
-            url_parts['host'] = args['host']
-            url_parts['service'] = args['service']
-            url_parts['view_name'] = 'service'
-        else:
-            raise Exception('invalid downtime type: %s' % args['type'])
-
-    elif action == 'ack':
-        url_parts['_transid'] = '-1'
-        url_parts['_do_confirm'] = 'yes'
-        url_parts['_do_actions'] = 'yes'
-
-        url_parts['_ack_comment'] = args['comment']
-        url_parts['_acknowledge'] = 'Acknowledge'
-        if args['type'] == 'host':
-            url_parts['host'] = args['host']
-            url_parts['view_name'] = 'hoststatus'
-        elif args['type'] == 'svc' or args['type'] == 'service':
-            url_parts['host'] = args['host']
-            url_parts['service'] = args['service']
-            url_parts['view_name'] = 'service'
-        else:
-            raise Exception('invalid ack type: %s' % args['type'])
-
-    elif action == 'get_host':
-        url_parts['action'] = 'get_host'
-        url_parts['host'] = 'ssiadmin4'
+        content['query'] = q
+        content['columns'] = c
 
     else:
         raise Exception('invalid action: %s' % action)
 
     if args['debug']:
-        print ("    url: %s" % url)
-        print ("  query: %s" % q)
-        print ("   cols: %s" % c)
+        print ("    url: %s" % url, file=sys.stderr)
+        print ("headers: %s" % headers, file=sys.stderr)
+        print ("content: %s" % content, file=sys.stderr)
 
-    resp=session.get(url, params={'query': q, 'columns': c})
+    return url, headers, content
 
-    if resp.status_code == 200:
-        v = resp.json()
-        values = []
-        for i in v['value']:
-            values.append(i['extensions'])
-        return values
-    elif resp.status_code == 204:       # zero entries
-        return []
-    else:
-        raise RuntimeError(resp.json())
-
-def nagiosAck(params):
+def nagiosAck(arghash):
     """
-    Acknowledge an alert in Nagios.  Returns a report, but the report may
-    not be very helpful.
+    Acknowledge an alert in Nagios.  Returns a report now on failure!
     """
-    url = generateNagiosUrl('ack', params)
-    response = loadUrl(url, '')
-    return processNagiosReport(response, params['debug'])
+    url, headers, content = generateSessionNagios('ack', arghash)
+    response = _loadRequestsPost(url, headers, content)
+    (ret, text) = processRequestsResponse(response, arghash['debug'])
+    if len(text) == 0: text = 'no text'
+    return ret, text
 
-def nagiosDowntime(params):
+def nagiosDowntime(arghash):
     """
     Schedule downtime in Nagios.  Returns a report, but the report may
     not be very helpful.
     """
-    url = generateNagiosUrl('downtime', params)
-    response = loadUrl(url, '')
-    return processNagiosReport(response, params['debug'])
+    url, headers, content = generateSessionNagios('downtime', arghash)
+    response = _loadRequestsPost(url, headers, content)
+    (ret, text) = processRequestsResponse(response, arghash['debug'])
+    if len(text) == 0: text = 'no text'
+    return ret, text
 
 def nagiosHostReportFormatted(entries):
     """
+    Takes a list of host entries and converts it to a pretty text version.
     """
 
     ret = []
@@ -696,6 +690,7 @@ def nagiosHostReportFormatted(entries):
 
 def nagiosServiceReportFormatted(entries):
     """
+    Takes a list of service entries and converts it to a pretty text version.
     """
 
     ret = []
@@ -759,50 +754,5 @@ def nagiosReport(type, argdict):
     elif type == 'hostservice':
         action = 'svcreport'
 
-    elif type == 'get_host':
-        action = 'get_host'
-
     else:
         raise Exception('invalid report type: %s' % type)
-
-    # return nagiosQuery(action, args)
-    # url = generateNagiosUrl(action, args)
-    # response = loadUrl(url, '')
-    # return processNagiosReport(response, argdict['debug'])
-
-def processNagiosReport(response, debug):
-    """
-    Process the response from loadUrl().  Returns an array of matching
-    objects, where we've trimmed off the first one (which described the
-    fields of the later objects).
-
-    If 'debug' is set, we'll print a lot of extra debugging information.
-
-    Incidentally, we're doing some really ugly stuff here because check_mk
-    isn't always returning with json, even when we ask it to.
-    """
-
-    data = response.read().decode()
-
-    try:
-        jsonresult = json.loads(data)
-        if debug: pprint(jsonresult)
-    except ValueError:
-        lines = data.split('\n')
-        if re.match('^MESSAGE: .*$', lines[0]):
-            return lines[0]
-        soup = BeautifulSoup(data, 'lxml')
-        div1 = soup.find('div', attrs={'class': 'error'})
-        if div1 is not None:
-            print("Error returned")
-            print(div1.string)
-            return []
-        else:
-            print("ValueError.  Invalid JSON object returned, and could not extract error.  Full response was:")
-            print(data)
-            return []
-
-    if len(jsonresult) <= 1: return []
-
-    jsonresult.pop(0)
-    return jsonresult

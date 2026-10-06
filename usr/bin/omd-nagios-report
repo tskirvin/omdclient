@@ -11,7 +11,6 @@ from datetime import datetime
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
-## Managed via central libraries and /etc/omd_client
 
 config_file_base = '/etc/omdclient/config.yaml'
 
@@ -146,7 +145,7 @@ B<omd-nagios-report>
 
 =head1 USAGE
 
-omd-nagios-report prints a report om all acknowledged and unacknowledged
+omd-nagios-report prints a report of all acknowledged and unacknowledged
 host and service alerts associated with the given server and site.
 
 =head1 ARGUMENTS
@@ -186,7 +185,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -194,7 +193,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2015-2025, Fermi National Accelerator Laboratory
+Copyright 2015-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

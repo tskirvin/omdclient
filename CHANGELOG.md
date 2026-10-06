@@ -8,6 +8,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.9.9-0] - 2026-10-07
+
+- updated to use the 1.0 Check\_MK API (massive refactor); pre-release before
+  v2.
+
 ## [1.4.3-1] - 2023-10-31
 
 - omdclient.spec - EL9 support

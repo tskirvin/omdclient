@@ -10,12 +10,11 @@ import omdclient, os, sys
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
-## Managed via central libraries and /etc/omd_client
 
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "Activate changes in check_mk/WATO interface"
+text = "Activate changes in check_mk API"
 usage_text = "usage: %prog [options]"
 
 #########################################################################
@@ -107,7 +106,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 

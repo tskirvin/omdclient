@@ -23,7 +23,7 @@ man     = glob.glob(os.path.join('man/man1/*'))
 setup (
   name             = 'omdclient',
   version          = version,
-  description      = 'omdclient check_mk + WATO/OMD interface',
+  description      = 'omdclient check_mk API interface',
   long_description = long_description,
   long_description_content_type = 'text/markdown',
   author           = 'Tim Skirvin',
@@ -36,8 +36,7 @@ setup (
   data_files       = [ ( 'share/man/man1', man ) ],
   scripts          = scripts,
   py_modules       = pyfiles,
-  keywords         = ['check_mk', 'omd', 'nagios', 'api', 'wato'],
-  install_requires = ['bs4>=4.0.0'],
+  keywords         = ['check_mk', 'omd', 'nagios', 'api'],
 )
 
 # add classifiers, platforms

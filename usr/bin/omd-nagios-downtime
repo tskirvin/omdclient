@@ -15,7 +15,7 @@ import omdclient, os, sys
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "schedule host/service downtimes via OMD"
+text = "schedule host/service downtimes via check_mk API"
 usage_text = "usage: %prog [options] [host|service] HOST [SVC] HOURS comment"
 
 #########################################################################
@@ -44,9 +44,8 @@ def main():
         params['host'] = args[1]
         params['service'] = None
         params['type'] = 'host'
-        if not params['remove']:
-            params['hours'] = args[2]
-            params['comment'] = ' '.join(args[3:])
+        params['hours'] = args[2]
+        params['comment'] = ' '.join(args[3:])
         svc_text = '%s' % (params['host'])
 
     elif (type == 'service' or type == 'svc') and len(args) >= 5:
@@ -57,28 +56,19 @@ def main():
         params['type'] = 'service'
         svc_text = '%s/%s' % (params['host'], params['service'])
 
-    elif (type == 'service' or type == 'svc') and params['remove'] and len(args) >= 3:
-        params['host'] = args[1]
-        params['service'] = args[2]
-        params['type'] = 'service'
-        svc_text = '%s/%s' % (params['host'], params['service'])
-
     else:
         p.print_help()
         sys.exit(1)
 
     try:
-        report = omdclient.nagiosDowntime(params)
+        (value, txt) = omdclient.nagiosDowntime(params)
 
-        if len(report) > 0:
-            if params['remove']:
-                print("%s  - downtime removed" % svc_text)
-            else:
-                print("%s - downtime for %d hour(s) (probably)"
-                    % (svc_text, int(params['hours'])))
+        if value:
+            print("%s - downtime for %d hour(s) (probably)"
+                % (svc_text, int(params['hours'])))
             sys.exit(0)
         else:
-            print("%s - no matching entries (probably failed)" % (svc_text))
+            print ("%s - failed to downtime (%s)" % (svc_text, txt))
             sys.exit(1)
 
     except Exception as e:
@@ -106,10 +96,8 @@ B<omd-nagios-downtime> service cmsadmin1 puppet-report 2 'down for 2 hours'
 
 =head1 USAGE
 
-omd-nagios-downtime uses the OMD autmation API to put a host or service
-into downtime.  It works on the standard nagios limitations - you can send
-a request, but there's no way to get back a response.  We try to guess a
-response anyway, but it's not horribly reliable.
+omd-nagios-downtime uses the check_mk API to put a host or service into
+downtime.
 
 =head1 ARGUMENTS
 
@@ -151,10 +139,6 @@ If set, print debugging information.
 
 Password for the API User.  Default: comes from the configuration file.
 
-=item B<--remove>
-
-If set, remove an existing downtime instead of creating a new one.
-
 =item B<--server> I<server>
 
 Host name of the server.  Default: comes from the configuration file.
@@ -180,7 +164,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -188,7 +172,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2015, Fermi National Accelerator Laboratory
+Copyright 2015-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

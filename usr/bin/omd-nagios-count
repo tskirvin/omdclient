@@ -11,12 +11,11 @@ from datetime import datetime
 #########################################################################
 ### Configuration #######################################################
 #########################################################################
-## Managed via central libraries and /etc/omd_client
 
 config_file_base = '/etc/omdclient/config.yaml'
 
 ## Text for --help
-text = "print a pretty host/service report to STDOUT"
+text = "ack/unack host/service counts to STDOUT"
 usage_text = "usage: %prog [options]"
 
 #########################################################################
@@ -48,8 +47,6 @@ def main():
         string = "%10s  Ack: %3d  Unack: %3d"
         print(string % ('Hosts', len(host_ack), len(host_unack)))
         print(string % ('Services', len(svc_ack), len(svc_unack)))
-        # print(string % ('Acknowledged Service Alerts',   len(svc_ack)))
-        # print(string % ('Unacknowledged Service Alerts', len(svc_unack)))
 
     except Exception as e:
         print("failed to generate the report: %s" % (e))
@@ -113,7 +110,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -121,7 +118,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2025, Fermi National Accelerator Laboratory
+Copyright 2025-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

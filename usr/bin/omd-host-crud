@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Created/Read/Update/Delete interface to the OMD WATO API.
+Create/Read/Update/Delete interface to the check_mk API.
 """
 
 #########################################################################
@@ -24,7 +24,7 @@ folder = 'UNSET'
 ip = 'UNSET'
 
 ## Text for --help
-text = "Manage a given host in OMD, using the WATO API"
+text = "Manage a given host in OMD, using the check_mk API"
 usage_text = "usage: %prog [create|read|update|delete] HOSTNAME [options]"
 
 #########################################################################
@@ -71,7 +71,7 @@ def main():
     group.add_option('--extra', dest='extra', default=extra,
         help='extra flags (space separated, default: %default)')
     group.add_option('--folder', dest='folder', default=folder,
-        help='set WATO folder (default: %default)')
+        help='set check_mk folder (default: %default)')
     group.add_option('--ip', dest='ip', default=ip,
         help='set IP address')
     p.add_option_group(group)
@@ -94,10 +94,12 @@ def main():
     host = args[1]
 
     try:
-
-        if request == 'create':     # REDO
+        if request == 'create':
             try:
                 result = omdclient.createHost(host, argdict)
+                if result is None: 
+                    print("%s - unknown error" % host)
+                    sys.exit(1)
             except Exception as e:
                 print ("%s - host not created: %s" % (host, e))
                 sys.exit(1)
@@ -122,23 +124,26 @@ def main():
                 print ("no host matched: %s" % host)
                 sys.exit(1)
 
-        elif request == 'update':       # REDO
-            value, result = omdclient.updateHost(host, argdict)
-            if value is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print("error on update: %s" % result)
+        elif request == 'update':       # TODO
+            try:
+                result = omdclient.updateHost(host, argdict)
+                if result is None:
+                    print("%s - unknown error" % host)
+                    sys.exit(1)
+            except Exception as e:
+                print ("no host matched: %s" % host)
                 sys.exit(1)
 
             print("%s - host updated, will now inventory..." % host)
 
-            value1, result1 = omdclient.discoverServicesHost(host, argdict)
-            if value1 is False:
-                if result is None: print("%s - unknown error" % host)
-                else: print("error on inventory: %s" % result)
-                sys.exit(1)
-            else:
-                print("%s - %s" % (host, result1))
-                sys.exit(0)
+            try:
+                result = omdclient.discoverServicesHost(host, argdict)
+            except Exception as e:
+                print ("%s - host not inventoried: %s" % (host, e))
+                sys.exit(2)
+
+            print("%s - ...host inventoried" % host)
+            sys.exit(0)
 
         elif request == 'delete':
             try:
@@ -186,8 +191,8 @@ B<omd-host-crud> delete cms-foo
 
 =head1 USAGE
 
-omd-host-crud provides a CRUD (Create/Read/Update/Delete) interface
-to the OMD/WATO check_mk web interface.
+omd-host-crud provides a CRUD (Create/Read/Update/Delete) interface to
+the check_mk API.
 
 =head1 ARGUMENTS
 
@@ -273,7 +278,7 @@ Not yet in use.  If you set to 'unmonitored', then we'll delete the entry.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
