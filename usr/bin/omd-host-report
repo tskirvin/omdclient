@@ -211,7 +211,7 @@ Not yet in use.  If you set to 'unmonitored', then we'll delete the entry.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -219,7 +219,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2016, Fermi National Accelerator Laboratory
+Copyright 2016-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

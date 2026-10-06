@@ -748,11 +748,13 @@ def nagiosReport(type, argdict):
         values = nagiosQuery('servicereport', args)
         return nagiosServiceReportFormatted(values)
 
-    elif type == 'host':
+    elif type == 'problem_hostlist':
         action = 'hostreport'
+        return nagiosQuery('hostreport', args)
 
-    elif type == 'hostservice':
+    elif type == 'problem_servicelist':
         action = 'svcreport'
+        return nagiosQuery('servicereport', args)
 
     else:
         raise Exception('invalid report type: %s' % type)

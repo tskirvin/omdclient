@@ -29,20 +29,20 @@ def printServiceStatusIfMatch(entry, opt):
     Print information from a svcproblems.  If we get opt.verbose, then
     we'll print a longer string; otherwise, just print the host name.
     """
-    status = entry[0]
-    host = entry[1]
-    svc = entry[2]
-    text = entry[4]
+    status = entry['state']
+    host = entry['host_name']
+    svc = entry['display_name']
+    text = entry['plugin_output']
 
     if opt.verbose: text = "%s/%s: %s (%s)" % (host, svc, status, text)
     else:           text = host
 
-    if status == 'CRIT':
-        if not opt.no_crit: print(text)
-    elif status == 'UNKN':
+    if str(status) == '2':
+        if not opt.no_crit:    print(text)
+    elif str(status) == '3':
         if not opt.no_unknown: print(text)
-    elif status == 'WARN':
-        if not opt.no_warn: print(text)
+    elif str(status) == '1':
+        if not opt.no_warn:    print(text)
 
 #########################################################################
 ### main () #############################################################
@@ -77,13 +77,15 @@ def main():
 
     try:
         if problem == 'ping':
-            report = omdclient.nagiosReport('host', argdict)
-            for e in report: print(e[0])
+            report = omdclient.nagiosReport('problem_hostlist', argdict)
+            for e in report: 
+                print(e['name'])
         else:
             p = re.compile('^%s$' % problem, re.IGNORECASE)
-            report = omdclient.nagiosReport('hostservice', argdict)
+            report = omdclient.nagiosReport('problem_servicelist', argdict)
             for e in report:
-                if p.match(e[2]): printServiceStatusIfMatch(e, opt)
+                name = e['display_name']
+                if p.match(name): printServiceStatusIfMatch(e, opt)
 
     except Exception as e:
         print("failed: %s" % (e))
@@ -215,7 +217,7 @@ Not yet in use.  If you set to 'unmonitored', then we'll delete the entry.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -223,7 +225,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2016, Fermi National Accelerator Laboratory
+Copyright 2016-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.

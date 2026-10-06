@@ -121,7 +121,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 

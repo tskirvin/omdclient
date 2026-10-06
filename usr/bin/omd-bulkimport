@@ -192,7 +192,7 @@ user'.  Default: comes from the configuration file.
 
 =head1 SEE ALSO
 
-https://mathias-kettner.de/checkmk_wato_webapi.html
+L<https://docs.checkmk.com/latest/en/rest_api.html>
 
 =head1 AUTHOR
 
@@ -200,7 +200,7 @@ Tim Skirvin <tskirvin@fnal.gov>
 
 =head1 LICENSE + COPYRIGHT
 
-Copyright 2019, Fermi National Accelerator Laboratory
+Copyright 2019-2026, Fermi National Accelerator Laboratory
 
 This program is free software; you may redistribute it and/or modify it
 under the same terms as Perl itself.
