@@ -19,7 +19,7 @@ SVC_STATE  = { 0: 'UP', 1: 'WARN', 2: 'CRIT', 3: 'UNKNOWN' }
 ### Declarations ########################################################
 #########################################################################
 
-import datetime, json, optparse, re, requests, sys, yaml
+import datetime, json, optparse, pprint, re, requests, sys, yaml
 from pprint import pprint
 
 #########################################################################
@@ -96,6 +96,7 @@ def generateRequests(action, args):
            discover_services
            get_all_hosts
            get_host
+           get_services
            pending_changes
            update_folder
            update_host
@@ -132,14 +133,17 @@ def generateRequests(action, args):
         hostname = args['host_name']
         url = baseurl + '/domain-types/service_discovery_run/actions/start/invoke'
         content['host_name'] = hostname
-        content['mode'] = 'fix_all'
 
-    elif action == 'get_all_hosts': # TODO
+    elif action == 'get_all_hosts':
         url = baseurl + '/domain-types/host_config/collections/all'
 
     elif action == 'get_host':
         hostname = args['host_name']
         url = baseurl + '/objects/host_config/' + hostname
+
+    elif action == 'get_services':
+        hostname = args['host_name']
+        url = baseurl + '/objects/service_discovery/' + hostname
 
     elif action == 'pending_changes':
         url = baseurl + '/domain-types/activation_run/collections/pending_changes'
@@ -212,7 +216,6 @@ def processRequestsResponse(response, debug):
     elif response.status_code == 303:
         print('Redirected to', response.headers['location'])
     elif 'detail' in response.json():
-        # return False, response.json()['detail']
         return False, parseError(response.json())
     elif response.status_code == 400:
         return False, response.json()
@@ -362,7 +365,7 @@ def discoverServicesHost(host, arghash):
     arghash['host_name'] = host
     url, headers, content = generateRequests('discover_services', arghash)
     content['host_name'] = host
-    if 'tabula_rasa' in arghash: content['mode'] = 'refresh'
+    if 'tabula_rasa' in arghash: content['mode'] = 'tabula_rasa'
     response = _loadRequestsPost(url, headers, content)
 
     try:    json = response.json()
@@ -453,6 +456,33 @@ def readHostData(host, arghash):
     arghash['host_name'] = host
     response = readHost(host, arghash)
     return response.json()
+
+def servicesHost(host, arghash):
+    """
+    Get a list of services and labels by host, which are the things that we
+    inventory.  It can be used to make a little report.
+    """
+
+    arghash['host_name'] = host
+    url, headers, content = generateRequests('get_services', arghash)
+    content['host_name'] = host
+    response = _loadRequestsGet(url, headers, content)
+
+    try:    json = response.json()
+    except: json = {}
+
+    # old text:  Service discovery successful. Added 76, removed 78, kept 2, total 78 services and 0 new, 0 total host labels
+
+    if arghash['debug']:
+        print(('response: ', response), file=sys.stderr)
+        print(('json: ', json), file=sys.stderr)
+
+    if response.status_code == 200:
+        return json
+    elif 'detail' in json:
+        raise RuntimeError(parseError(json))
+    else:
+        raise False
 
 def updateFolder(host, folder, arghash):
     """
@@ -681,12 +711,16 @@ def nagiosDowntime(arghash):
     if len(text) == 0: text = 'no text'
     return ret, text
 
-def nagiosHostReportFormatted(entries):
+def nagiosHostReportFormatted(entries, argdict):
     """
     Takes a list of host entries and converts it to a pretty text version.
     """
 
     ret = []
+    skip_downtime = True
+    if 'include_downtime' in argdict and argdict['include_downtime']:
+        skip_downtime = False
+
     for i in entries:
         state_pretty = HOST_STATE[i['state']]
 
@@ -697,21 +731,30 @@ def nagiosHostReportFormatted(entries):
         age = datetime.datetime.fromtimestamp(i['last_state_change'])
         age_human = age.strftime("%Y-%m-%d %H:%M:%S %Z")
 
+        comment = '; '.join(comments)
+        if skip_downtime:
+            if re.search(r' has been scheduled for fixed downtime', comment):
+                continue
+
         # need to parse out comments still
         ret.append([
             i['name'], state_pretty, i['plugin_output'],
             age_human,
-            '; '.join(comments)
+            comment
         ])
 
     return ret
 
-def nagiosServiceReportFormatted(entries):
+def nagiosServiceReportFormatted(entries, argdict):
     """
     Takes a list of service entries and converts it to a pretty text version.
     """
 
     ret = []
+    skip_downtime = True
+    if 'include_downtime' in argdict and argdict['include_downtime']:
+        skip_downtime = False
+
     for i in entries:
         state_pretty = SVC_STATE[i['state']]
 
@@ -724,13 +767,18 @@ def nagiosServiceReportFormatted(entries):
         for j in i['comments_with_info']:
             comments.append('%s: %s' % (j[1], j[2]))
 
+        comment = '; '.join(comments)
+        if skip_downtime:
+            if re.search(r' has been scheduled for fixed downtime', comment):
+                continue
+
         ret.append([
             i['host_name'],
             i['display_name'],
             state_pretty,
             i['plugin_output'],
             age_human,
-            '; '.join(comments)
+            comment
         ])
 
     return ret
@@ -745,26 +793,26 @@ def nagiosReport(type, argdict):
     if type == 'host_ack':
         args['ack'] = 1
         values = nagiosQuery('hostreport', args)
-        return nagiosHostReportFormatted(values)
+        return nagiosHostReportFormatted(values, args)
 
     elif type == 'host_unack':
         args['ack'] = 0
         values = nagiosQuery('hostreport', args)
-        return nagiosHostReportFormatted(values)
+        return nagiosHostReportFormatted(values, args)
 
     elif type == 'host':
         values = nagiosQuery('hostreport', args)
-        return nagiosHostReportFormatted(values)
+        return nagiosHostReportFormatted(values, args)
 
     elif type == 'svc_ack':
         args['ack'] = 1
         values = nagiosQuery('servicereport', args)
-        return nagiosServiceReportFormatted(values)
+        return nagiosServiceReportFormatted(values, args)
 
     elif type == 'svc_unack':
         args['ack'] = 0
         values = nagiosQuery('servicereport', args)
-        return nagiosServiceReportFormatted(values)
+        return nagiosServiceReportFormatted(values, args)
 
     elif type == 'problem_hostlist':
         action = 'hostreport'

@@ -8,6 +8,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.0-pre3] - 2026-10-20
+
+- omd-inventory - reporting on what's changed
+- omd-nagios-report, omd-nagios-count - handling the new variations on
+  how downtime'd hosts are reported more cleanly
+
 ## [2.0.0-pre2] - 2026-10-06
 
 - more general fixes before releasing 2.0.0

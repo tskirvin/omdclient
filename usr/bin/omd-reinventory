@@ -5,7 +5,7 @@
 ### Declarations ########################################################
 #########################################################################
 
-import omdclient, os, sys
+import omdclient, os, pprint, sys
 
 #########################################################################
 ### Configuration #######################################################
@@ -17,6 +17,23 @@ config_file_base = '/etc/omdclient/config.yaml'
 ## Text for --help
 text = "Reinventory a given node through the check_mk API"
 usage_text = "usage: %prog [options]"
+
+#########################################################################
+### subroutines #########################################################
+#########################################################################
+
+def parseServices(json):
+    """
+    Print a single-line report on per-host service counts and label counts,
+    based on the output of /objects/service_discovery/ .  It's kinda janky.
+    """
+    return "%d services, %d labels (%d changed, %d vanished)" % \
+        (
+            len(json['extensions']['check_table']),
+            len(json['extensions']['host_labels']),
+            len(json['extensions']['changed_labels']),
+            len(json['extensions']['vanished_labels'])
+        )
 
 #########################################################################
 ### main () #############################################################
@@ -41,9 +58,15 @@ def main():
     error = 0
     for host in args:
         try:
+            result0 = omdclient.servicesHost(host, argdict)
+            before = parseServices(omdclient.servicesHost(host, argdict))
             result = omdclient.discoverServicesHost(host, argdict)
             if result:
-                print ("%s - inventoried (no longer includes data)" % host)
+                after = parseServices(omdclient.servicesHost(host, argdict))
+                if before == after:
+                    print ("%s - inventoried, no changes reported" % host)
+                else:
+                    print ("%s - inventoried; new: %s, old: %s" % (host, after, before))
             else:
                 print ("%s - failed to inventory (no error)" % host)
                 error = 1

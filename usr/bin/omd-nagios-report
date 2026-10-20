@@ -32,7 +32,7 @@ def printHostReport(array):
     if comments:
         p = re.compile ('This .* has been scheduled for fixed downtime')
         comments = p.sub ('DOWNTIME', comments)
-        print("  ACK - %-70.70s" % comments)
+        print("  ACK - %-s" % comments)
 
 
 def printSvcReport(array):
@@ -43,7 +43,7 @@ def printSvcReport(array):
     print("%-45s  %-4s  %.25s" % ("%s/%s" % (host, svc), state, state_age))
     print("  %s" % text.encode('utf-8').decode('utf-8'))
     if comments:
-        print("  ACK: %-70.70s" % comments)
+        print("  ACK: %-s" % comments)
 
 #########################################################################
 ### main () #############################################################
@@ -58,8 +58,13 @@ def main():
         sys.exit(3)
 
     p = omdclient.generateParser(text, usage_text, config)
+    p.add_option('--include_downtime', dest='include_downtime',
+        action="store_true", default=False,
+        help="include downtimes in the report? (default: %default)")
     opt, args = p.parse_args()
     argdict = omdclient.parserArgDict(opt)
+
+    argdict['include_downtime'] = opt.include_downtime
 
     try:
         host_ack = []
@@ -68,7 +73,7 @@ def main():
         svc_ack = omdclient.nagiosReport('svc_ack',   argdict)
         svc_unack = omdclient.nagiosReport('svc_unack', argdict)
 
-        string = "%35s  %3d matches"
+        string = "%35s  %5d matches"
         print(string % ('Acknowledged Host Alerts',      len(host_ack)))
         print(string % ('Unacknowledged Host Alerts',    len(host_unack)))
         print(string % ('Acknowledged Service Alerts',   len(svc_ack)))
@@ -151,6 +156,11 @@ host and service alerts associated with the given server and site.
 =head1 ARGUMENTS
 
 =over 4
+
+=item B<--include_downtime>
+
+By default, we skip items that have been set to DOWNTIME; this puts them back
+in, which may be occasionally useful.
 
 =item B<--debug>
 

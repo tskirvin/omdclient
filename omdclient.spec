@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
 Version:        2.0.0
-Release:        pre2%{?dist}
+Release:        pre3%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -58,14 +58,18 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 
 %files
 %defattr(-,root,root)
-%config(noreplace) /etc/omdclient/config.yaml
+%config(noreplace) /etc/omdclient/*
 %{_bindir}/omd-*
 /usr/share/man/man1/*
 %{python3_sitelib}/omdclient/*py*
 %{python3_sitelib}/*egg-info
-/etc/omdclient/*
 
 %changelog
+* Tue Oct 20 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre3
+- omd-inventory - reporting on what's changed
+- omd-nagios-report, omd-nagios-count - handling the new variations on
+  how downtime'd hosts are reported more cleanly
+
 * Tue Oct 06 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre2
 - cleanup
 

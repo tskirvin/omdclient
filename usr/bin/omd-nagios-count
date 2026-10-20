@@ -41,12 +41,14 @@ def main():
     try:
         host_ack = omdclient.nagiosReport('host_ack',   argdict)
         host_unack = omdclient.nagiosReport('host_unack', argdict)
+        host_total = host_ack + host_unack
         svc_ack = omdclient.nagiosReport('svc_ack',   argdict)
         svc_unack = omdclient.nagiosReport('svc_unack', argdict)
+        svc_total = svc_ack + svc_unack
 
-        string = "%10s  Ack: %3d  Unack: %3d"
-        print(string % ('Hosts', len(host_ack), len(host_unack)))
-        print(string % ('Services', len(svc_ack), len(svc_unack)))
+        string = "%10s  Ack  %5d  Unack  %5d  Total  %5d"
+        print(string % ('Hosts', len(host_ack), len(host_unack), len(host_total)))
+        print(string % ('Services', len(svc_ack), len(svc_unack), len(svc_total)))
 
     except Exception as e:
         print("failed to generate the report: %s" % (e))
