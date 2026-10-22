@@ -8,6 +8,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.0-pre4] - 2026-10-22
+
+- nagios queries now skip downtimes by default
+
 ## [2.0.0-pre3] - 2026-10-20
 
 - omd-inventory - reporting on what's changed

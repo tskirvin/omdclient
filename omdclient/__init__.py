@@ -605,6 +605,7 @@ def generateSessionNagios(action, args):
                     we'll just use 'now()'.
             type    Associated with 'ack' or 'downtime'; must be one of
                     'host' or 'service'.
+            include_downtime 
 
     If 'debug' is set, we'll print the URL to stdout (with the password
     blanked out).
@@ -664,6 +665,12 @@ def generateSessionNagios(action, args):
         else:
             q = q1
 
+        if 'include_downtime' in args and args['include_downtime']:
+            pass
+        else:
+            q2 = '{"op": "=", "left": "scheduled_downtime_depth", "right": "0"}'
+            q = '{"op": "and", "expr": [%s, %s]}' % (q, q2)
+
         content['query'] = q
         content['columns'] = [ 'name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
 
@@ -675,6 +682,15 @@ def generateSessionNagios(action, args):
             q = '{"op": "and", "expr": [%s, %s]}' % (q1, q2)
         else:
             q = q1
+
+        if 'include_downtime' in args and args['include_downtime']:
+            pass
+        else:
+            q3 = '{"op": "=", "left": "host_scheduled_downtime_depth", "right": "0"}'
+            q4 = '{"op": "=", "left": "scheduled_downtime_depth", "right": "0"}'
+            q = '{"op": "and", "expr": [%s, %s]}' % (q, q3)
+            q = '{"op": "and", "expr": [%s, %s]}' % (q, q4)
+
         c = [ 'host_name', 'display_name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
 
         content['query'] = q
@@ -717,10 +733,6 @@ def nagiosHostReportFormatted(entries, argdict):
     """
 
     ret = []
-    skip_downtime = True
-    if 'include_downtime' in argdict and argdict['include_downtime']:
-        skip_downtime = False
-
     for i in entries:
         state_pretty = HOST_STATE[i['state']]
 
@@ -732,9 +744,6 @@ def nagiosHostReportFormatted(entries, argdict):
         age_human = age.strftime("%Y-%m-%d %H:%M:%S %Z")
 
         comment = '; '.join(comments)
-        if skip_downtime:
-            if re.search(r' has been scheduled for fixed downtime', comment):
-                continue
 
         # need to parse out comments still
         ret.append([
@@ -751,9 +760,6 @@ def nagiosServiceReportFormatted(entries, argdict):
     """
 
     ret = []
-    skip_downtime = True
-    if 'include_downtime' in argdict and argdict['include_downtime']:
-        skip_downtime = False
 
     for i in entries:
         state_pretty = SVC_STATE[i['state']]
@@ -768,9 +774,6 @@ def nagiosServiceReportFormatted(entries, argdict):
             comments.append('%s: %s' % (j[1], j[2]))
 
         comment = '; '.join(comments)
-        if skip_downtime:
-            if re.search(r' has been scheduled for fixed downtime', comment):
-                continue
 
         ret.append([
             i['host_name'],
