@@ -1,7 +1,7 @@
 Name:           omdclient
 Group:          System Environment/Libraries
 Version:        2.0.0
-Release:        pre4%{?dist}
+Release:        pre5%{?dist}
 Summary:        OMD/WATO API check_mk connection tools for puppet
 URL:            http://github.com/tskirvin/omdclient.git
 
@@ -65,8 +65,12 @@ python3 setup.py install --prefix=${RPM_BUILD_ROOT}/usr \
 %{python3_sitelib}/*egg-info
 
 %changelog
-* Thu Oct 20 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre4
+* Fri Oct 23 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre5
+- omd-nagios-report serivce queries skip services on hosts that are down
+
+* Thu Oct 22 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre4
 - omd-nagios-report queries now skip downtime'd hosts and services by default
+
 * Tue Oct 20 2026   Tim Skirvin <tskirvin@fnal.gov>     2.0.0-pre3
 - omd-inventory - reporting on what's changed
 - omd-nagios-report, omd-nagios-count - handling the new variations on

@@ -691,6 +691,10 @@ def generateSessionNagios(action, args):
             q = '{"op": "and", "expr": [%s, %s]}' % (q, q3)
             q = '{"op": "and", "expr": [%s, %s]}' % (q, q4)
 
+        # skip services where the associated host is not OK
+        q5 = '{"op": "=", "left": "host_state", "right": "0"}'
+        q = '{"op": "and", "expr": [%s, %s]}' % (q, q5)
+
         c = [ 'host_name', 'display_name', 'state', 'plugin_output', 'last_state_change', 'comments_with_info' ]
 
         content['query'] = q

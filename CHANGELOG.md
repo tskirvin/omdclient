@@ -10,6 +10,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [2.0.0-pre4] - 2026-10-22
 
+- service queries skip services on hosts that are not up
+
+## [2.0.0-pre4] - 2026-10-22
+
 - nagios queries now skip downtimes by default
 
 ## [2.0.0-pre3] - 2026-10-20
