@@ -8,6 +8,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.0-1] - 2026-11-10
+
+- no changes from pre4, just releasing now
+
 ## [2.0.0-pre4] - 2026-10-22
 
 - service queries skip services on hosts that are not up
